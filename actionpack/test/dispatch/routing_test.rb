@@ -2808,6 +2808,59 @@ class TestConstraintsAccessingParameters < ActionDispatch::IntegrationTest
   end
 end
 
+class TestGlobRoutingMapper < ActionDispatch::IntegrationTest
+  Routes = ActionDispatch::Routing::RouteSet.new.tap do |app|
+    app.draw do
+      ok = lambda { |env| [200, { 'Content-Type' => 'text/plain' }, []] }
+
+      get "/*id" => redirect("/not_cars"), :constraints => {id: /dummy/}
+      get "/cars" => ok
+    end
+  end
+
+  #include Routes.url_helpers
+  def app; Routes end
+
+  def test_glob_constraint
+    get "/dummy"
+    assert_equal "301", @response.code
+    assert_equal "/not_cars", @response.header['Location'].match('/[^/]+$')[0]
+  end
+
+  def test_glob_constraint_skip_route
+    get "/cars"
+    assert_equal "200", @response.code
+  end
+  def test_glob_constraint_skip_all
+    get "/missing"
+    assert_equal "404", @response.code
+  end
+end
+
+class TestOptimizedNamedRoutes < ActionDispatch::IntegrationTest
+  Routes = ActionDispatch::Routing::RouteSet.new.tap do |app|
+    app.draw do
+      ok = lambda { |env| [200, { 'Content-Type' => 'text/plain' }, []] }
+      get '/foo' => ok, as: :foo
+    end
+  end
+
+  include Routes.url_helpers
+  def app; Routes end
+
+  test 'enabled when not mounted and default_url_options is empty' do
+    assert Routes.url_helpers.optimize_routes_generation?
+  end
+
+  test 'named route called as singleton method' do
+    assert_equal '/foo', Routes.url_helpers.foo_path
+  end
+
+  test 'named route called on included module' do
+    assert_equal '/foo', foo_path
+  end
+end
+
 class TestNamedRouteUrlHelpers < ActionDispatch::IntegrationTest
   class CategoriesController < ActionController::Base
     def show

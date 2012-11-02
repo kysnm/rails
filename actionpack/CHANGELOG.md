@@ -1,3 +1,8 @@
+*   Fixed a bug that ignores constraints on a glob route. This was caused because the constraint
+    regular expression is overwritten when the `routes.rb` file is processed. Fixes #7924
+
+    *Maura Fitzgerald*
+
 *   Use the reference for the mime type to get the format
 
     Fixes: CVE-2014-0082
