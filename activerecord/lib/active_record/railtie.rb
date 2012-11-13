@@ -99,8 +99,10 @@ module ActiveRecord
 
     initializer "active_record.set_reloader_hooks" do |app|
       hook = lambda do
-        ActiveRecord::Base.clear_reloadable_connections!
-        ActiveRecord::Base.clear_cache!
+        if ActiveRecord::Base.connected?
+          ActiveRecord::Base.clear_reloadable_connections!
+          ActiveRecord::Base.clear_cache!
+        end
       end
 
       if app.config.reload_classes_only_on_change
