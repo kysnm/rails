@@ -203,7 +203,7 @@ module ActiveRecord
     # * <tt>:min_messages</tt> - An optional client min messages that is used in a
     #   <tt>SET client_min_messages TO <min_messages></tt> call on the connection.
     class PostgreSQLAdapter < AbstractAdapter
-      attr_reader :database_version
+      attr_reader :database_version, :spid
       class TableDefinition < ActiveRecord::ConnectionAdapters::TableDefinition
         def xml(*args)
           options = args.extract_options!
@@ -350,6 +350,7 @@ module ActiveRecord
 
       # Close then reopen the connection.
       def reconnect!
+        @spid = nil
         clear_cache!
         @connection.reset
         @open_transactions = 0
@@ -364,6 +365,7 @@ module ActiveRecord
       # Disconnects from the database if already connected. Otherwise, this
       # method does nothing.
       def disconnect!
+        @spid = nil
         clear_cache!
         @connection.close rescue nil
       end
@@ -1280,6 +1282,8 @@ module ActiveRecord
         # Configures the encoding, verbosity, schema search path, and time zone of the connection.
         # This is called by #connect and should not be called manually.
         def configure_connection
+          @spid = result_as_array(@connection.async_exec("SELECT pg_backend_pid()")).first.first.to_i
+
           if @config[:encoding]
             @connection.set_client_encoding(@config[:encoding])
           end
@@ -1296,6 +1300,8 @@ module ActiveRecord
           elsif @local_tz
             execute("SET time zone '#{@local_tz}'", 'SCHEMA')
           end
+
+          $log.info "MIQ(#{adapter_name}.configure_connection) SPID: [#{spid}]" if $log
         end
 
         # Returns the current ID of a table's sequence.
