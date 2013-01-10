@@ -242,7 +242,7 @@ module ActiveRecord
         self
       end
 
-      %w( string text integer float decimal datetime timestamp time date binary boolean ).each do |column_type|
+      %w( string text integer bigint float decimal datetime timestamp time date binary boolean ).each do |column_type|
         class_eval <<-EOV, __FILE__, __LINE__ + 1
           def #{column_type}(*args)                                   # def string(*args)
             options = args.extract_options!                           #   options = args.extract_options!
@@ -265,7 +265,7 @@ module ActiveRecord
         options = args.extract_options!
         polymorphic = options.delete(:polymorphic)
         args.each do |col|
-          column("#{col}_id", :integer, options)
+          column("#{col}_id", :bigint, options)
           column("#{col}_type", :string, polymorphic.is_a?(Hash) ? polymorphic : options) unless polymorphic.nil?
         end
       end
@@ -433,7 +433,7 @@ module ActiveRecord
         options = args.extract_options!
         polymorphic = options.delete(:polymorphic)
         args.each do |col|
-          @base.add_column(@table_name, "#{col}_id", :integer, options)
+          @base.add_column(@table_name, "#{col}_id", :bigint, options)
           @base.add_column(@table_name, "#{col}_type", :string, polymorphic.is_a?(Hash) ? polymorphic : options) unless polymorphic.nil?
         end
       end
