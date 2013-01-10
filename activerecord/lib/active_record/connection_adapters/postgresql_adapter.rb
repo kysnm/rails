@@ -370,6 +370,27 @@ module ActiveRecord
         @connection.close rescue nil
       end
 
+      def _active_connections(database)
+        # datid, datname, procpid, usesysid, username, current_query, waiting, xact_start, query_start, backend_start, client_addr, client_port
+        result_as_array(@connection.async_exec("SELECT client_addr,datname from pg_stat_activity where datname = #{quote(database)}"))
+      end
+
+      def database_connections(database, type = :all)
+        all_conns = self._active_connections(database)
+
+        conns = case type
+        when :local
+          all_conns.select {|c| c[0] =~ /localhost|127\.0\.0\.1|::1/ }
+        when :remote
+          all_conns.reject {|c| c[0] =~ /localhost|127\.0\.0\.1|::1/ }
+        else
+          all_conns
+        end
+
+        conns ||= []
+        conns.length
+      end
+
       def native_database_types #:nodoc:
         NATIVE_DATABASE_TYPES
       end
