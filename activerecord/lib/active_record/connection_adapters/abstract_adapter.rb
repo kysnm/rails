@@ -274,6 +274,9 @@ module ActiveRecord
       end
 
       protected
+        def trim_message(msg)
+          Rails.env.production? ? (msg[0..1000] + "...") : msg
+        end
 
         def log(sql, name = "SQL", binds = [])
           @instrumenter.instrument(
@@ -284,7 +287,7 @@ module ActiveRecord
             :binds         => binds) { yield }
           rescue Timeout::ExitException => e  # We are capturing this exception because EVM sometimes wraps us in a Timeout block, see http://redmine.ruby-lang.org/issues/2343
             # Rescue timeout error separately to avoid getting it raised as ActiveRecord::StatementInvalid
-            message = "Super class: [#{e.class.superclass.name}], Class: [#{e.class.name}], Message: [#{e.message}], Sql: [#{sql[0..1000]}...]" # need to reference superclass because the timeout implementation creates a subclass
+            message = "Super class: [#{e.class.superclass.name}], Class: [#{e.class.name}], Message: [#{trim_message(e.message)}], Sql: [#{trim_message(sql)}]" # need to reference superclass because the timeout implementation creates a subclass
             $log.error("MIQ(abstract_adapter) Name: [#{name}], Message: [#{message}]") if $log
             $log.info("MIQ(abstract_adapter) Verifying DB connection after timeout error") if $log
             begin
@@ -294,7 +297,7 @@ module ActiveRecord
             end
             raise e
         rescue Exception => e
-          message = "#{e.class.name}: #{e.message}: #{sql[0...1000]}..."
+          message = "#{e.class.name}: #{trim_message(e.message)}: #{trim_message(sql)}"
 
           @logger.debug message if @logger
           $log.error("MIQ(abstract_adapter) Name: [#{name}], Message: [#{message}]") if $log
