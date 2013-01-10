@@ -6,6 +6,8 @@ require 'active_support/deprecation'
 require 'active_record/connection_adapters/schema_cache'
 require 'monitor'
 
+require 'timeout'
+
 module ActiveRecord
   module ConnectionAdapters # :nodoc:
     extend ActiveSupport::Autoload
@@ -280,8 +282,19 @@ module ActiveRecord
             :name          => name,
             :connection_id => object_id,
             :binds         => binds) { yield }
+          rescue Timeout::ExitException => e  # We are capturing this exception because EVM sometimes wraps us in a Timeout block, see http://redmine.ruby-lang.org/issues/2343
+            # Rescue timeout error separately to avoid getting it raised as ActiveRecord::StatementInvalid
+            message = "Super class: [#{e.class.superclass.name}], Class: [#{e.class.name}], Message: [#{e.message}], Sql: [#{sql[0..1000]}...]" # need to reference superclass because the timeout implementation creates a subclass
+            $log.error("MIQ(abstract_adapter) Name: [#{name}], Message: [#{message}]") if $log
+            $log.info("MIQ(abstract_adapter) Verifying DB connection after timeout error") if $log
+            begin
+              verify!
+            rescue => err
+              $log.info("MIQ(abstract_adapter) Reconnecting after timeout error failed due to err: Class: [#{err.class.name}], Message: [#{err.message}]") if $log
+            end
+            raise e
         rescue Exception => e
-          message = "#{e.class.name}: #{e.message}: #{sql}"
+          message = "#{e.class.name}: #{e.message}: #{sql[0...1000]}..."
 
           @logger.debug message if @logger
           $log.error("MIQ(abstract_adapter) Name: [#{name}], Message: [#{message}]") if $log
