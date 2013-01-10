@@ -994,6 +994,13 @@ module ActiveRecord
         result.rows.first.first
       end
 
+      def sequence_details(sequence)
+        rows = select_all <<-end_sql, "SCHEMA"
+          SELECT * FROM #{quote_column_name(sequence)}
+        end_sql
+        rows.first
+      end
+
       # Sets the sequence of a table's primary key to the specified value.
       def set_pk_sequence!(table, value, pk = nil, sequence = nil) #:nodoc:
         unless pk and sequence
