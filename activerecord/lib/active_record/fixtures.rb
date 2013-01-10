@@ -853,6 +853,7 @@ module ActiveRecord
         @fixture_connections.each do |connection|
           connection.increment_open_transactions
           connection.transaction_joinable = false
+          connection.instance_variable_set(:@_current_transaction_records, []) unless connection.instance_variable_get(:@_current_transaction_records)
           connection.begin_db_transaction
         end
       # Load fixtures for every test.
@@ -876,9 +877,13 @@ module ActiveRecord
       # Rollback changes if a transaction is active.
       if run_in_transaction?
         @fixture_connections.each do |connection|
-          if connection.open_transactions != 0
+          connection.decrement_open_transactions
+          if connection.open_transactions == 0
             connection.rollback_db_transaction
-            connection.decrement_open_transactions
+            connection.send(:rollback_transaction_records, true)
+          else
+            connection.rollback_to_savepoint
+            connection.send(:rollback_transaction_records, false)
           end
         end
         @fixture_connections.clear
