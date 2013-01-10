@@ -1022,12 +1022,37 @@ module ActiveRecord
         execute add_column_sql
       end
 
+      # Patch for Postgres 8.2.6 and migrations that require an implicit conversion (such as :string to :integer)
+      # https://rails.lighthouseapp.com/projects/8994-ruby-on-rails/tickets/1036
+      def using_cast(column_name, type, options)
+        return "" if postgresql_version < 80206
+        " USING CAST(#{quote_column_name(column_name)} AS #{type_to_sql(type, options[:limit], options[:precision], options[:scale])})"
+      end
+
       # Changes the column of a table.
       def change_column(table_name, column_name, type, options = {})
         clear_cache!
         quoted_table_name = quote_table_name(table_name)
 
-        execute "ALTER TABLE #{quoted_table_name} ALTER COLUMN #{quote_column_name(column_name)} TYPE #{type_to_sql(type, options[:limit], options[:precision], options[:scale])}"
+        begin
+          # Patch for Postgres 8.2.6 and migrations that require an implicit conversion (such as :string to :integer)
+          # https://rails.lighthouseapp.com/projects/8994-ruby-on-rails/tickets/1036
+          execute "ALTER TABLE #{quoted_table_name} ALTER COLUMN #{quote_column_name(column_name)} TYPE #{type_to_sql(type, options[:limit], options[:precision], options[:scale])}#{using_cast(column_name, type, options)}"
+        rescue ActiveRecord::StatementInvalid => e
+          raise e if postgresql_version > 80000
+          # This is PostgreSQL 7.x, so we have to use a more arcane way of doing it.
+          begin
+            begin_db_transaction
+            tmp_column_name = "#{column_name}_ar_tmp"
+            add_column(table_name, tmp_column_name, type, options)
+            execute "UPDATE #{quoted_table_name} SET #{quote_column_name(tmp_column_name)} = CAST(#{quote_column_name(column_name)} AS #{type_to_sql(type, options[:limit], options[:precision], options[:scale])})"
+            remove_column(table_name, column_name)
+            rename_column(table_name, tmp_column_name, column_name)
+            commit_db_transaction
+          rescue
+            rollback_db_transaction
+          end
+        end
 
         change_column_default(table_name, column_name, options[:default]) if options_include_default?(options)
         change_column_null(table_name, column_name, options[:null], options[:default]) if options.key?(:null)
