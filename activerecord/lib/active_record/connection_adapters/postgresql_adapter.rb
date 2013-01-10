@@ -1101,6 +1101,12 @@ module ActiveRecord
         row && row.first
       end
 
+      # Returns just a table's primary key sequence
+      def primary_key_sequence(table)
+        pk_and_sequence = pk_and_sequence_for(table)
+        pk_and_sequence && pk_and_sequence.last
+      end
+
       # Renames a table.
       # Also renames a table's primary key sequence if the sequence name matches the
       # Active Record default.
