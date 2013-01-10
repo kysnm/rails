@@ -725,6 +725,8 @@ module ActiveRecord
           canceled_msg = Base.connection.supports_ddl_transactions? ? "this and " : ""
           raise StandardError, "An error has occurred, #{canceled_msg}all later migrations canceled:\n\n#{e}", e.backtrace
         end
+
+        Base.connection.schema_cache.clear!
       end
       ran
     end
