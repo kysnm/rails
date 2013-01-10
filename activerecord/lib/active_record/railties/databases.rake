@@ -284,8 +284,12 @@ db_namespace = namespace :db do
     db_namespace['_dump'].invoke
   end
 
+  task :reset do
+    STDERR.puts "Use rake evm:db:reset if you want to reset your EVM DB.  In the unlikely case you want to use db:reset from rails, use rake db:reset_schema."
+  end
+
   # desc 'Drops and recreates the database from db/schema.rb for the current environment and loads the seeds.'
-  task :reset => [:environment, :load_config] do
+  task :reset_schema => [:environment, :load_config] do
     db_namespace["drop"].invoke
     db_namespace["setup"].invoke
   end
