@@ -35,7 +35,10 @@ module ActiveRecord
     #   > [#<Post:0x36bff9c @attributes={"title"=>"The Cheap Man Buys Twice"}>, ...]
     def find_by_sql(sql, binds = [])
       logging_query_plan do
-        connection.select_all(sanitize_sql(sql), "#{name} Load", binds).collect! { |record| instantiate(record) }
+        results = connection.select_all(sanitize_sql(sql), "#{name} Load", binds)
+        ms = Benchmark.ms { results.collect! { |record| instantiate(record) } }
+        logger.debug('  %s Inst (%.1fms - %drows)' % [name || 'SQL', ms, results.length])
+        results
       end
     end
 

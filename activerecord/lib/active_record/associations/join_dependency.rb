@@ -47,14 +47,18 @@ module ActiveRecord
         primary_key = join_base.aliased_primary_key
         parents = {}
 
-        records = rows.map { |model|
-          primary_id = model[primary_key]
-          parent = parents[primary_id] ||= join_base.instantiate(model)
-          construct(parent, @associations, join_associations, model)
-          parent
-        }.uniq
+        records = nil
+        ms = Benchmark.ms do
+          records = rows.map { |model|
+            primary_id = model[primary_key]
+            parent = parents[primary_id] ||= join_base.instantiate(model)
+            construct(parent, @associations, join_associations, model)
+            parent
+          }.uniq
 
-        remove_duplicate_results!(active_record, records, @associations)
+          remove_duplicate_results!(active_record, records, @associations)
+        end
+        join_base.active_record.logger.debug('  %s Inst Including Associations (%.1fms - %drows)' % [join_base.active_record.name || 'SQL', ms, records.length])
         records
       end
 
