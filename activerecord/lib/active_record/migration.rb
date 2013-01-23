@@ -338,7 +338,7 @@ module ActiveRecord
       new.migrate direction
     end
 
-    cattr_accessor :verbose
+    cattr_accessor :verbose, :no_transaction
 
     attr_accessor :name, :version
 
@@ -351,6 +351,7 @@ module ActiveRecord
 
     # instantiate the delegate object after initialize is defined
     self.verbose  = true
+    self.no_transaction = false
     self.delegate = new
 
     def revert
@@ -416,6 +417,10 @@ module ActiveRecord
       when :up   then announce "migrated (%.4fs)" % time.real; write
       when :down then announce "reverted (%.4fs)" % time.real; write
       end
+    end
+
+    def use_transaction?
+      !self.class.no_transaction
     end
 
     def write(text="")
@@ -525,7 +530,7 @@ module ActiveRecord
       File.basename(filename)
     end
 
-    delegate :migrate, :announce, :write, :to => :migration
+    delegate :migrate, :announce, :write, :use_transaction?, :to => :migration
 
     private
 
@@ -716,7 +721,7 @@ module ActiveRecord
         end
 
         begin
-          ddl_transaction do
+          ddl_transaction(migration.use_transaction?) do
             migration.migrate(@direction)
             record_version_state_after_migrating(migration.version)
           end
@@ -772,8 +777,8 @@ module ActiveRecord
       end
 
       # Wrap the migration in a transaction only if supported by the adapter.
-      def ddl_transaction(&block)
-        if Base.connection.supports_ddl_transactions?
+      def ddl_transaction(use_transaction = true, &block)
+        if use_transaction && Base.connection.supports_ddl_transactions?
           Base.transaction { block.call }
         else
           block.call
