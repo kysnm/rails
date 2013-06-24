@@ -1285,9 +1285,8 @@ module ActiveRecord
         begin
           yield
         rescue Exception => e
-          case translate_exception(e,e.message)
-            when LostConnection; retry if auto_reconnected?
-          end
+          retry if auto_reconnected? && e.message =~ Regexp.union(*lost_connection_messages)
+
           raise
         end
       end
