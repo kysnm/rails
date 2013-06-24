@@ -32,11 +32,11 @@ module ActiveRecord
     end
 
     def self.did_retry_db_connection(connection,count)
-      logger.info "CONNECTION RETRY: #{connection.class.name} retry ##{count}."
+      logger.info "CONNECTION RETRY: #{connection.class.name} retry ##{count}." if logger
     end
 
     def self.did_lose_db_connection(connection)
-      logger.info "CONNECTION LOST: #{connection.class.name}"
+      logger.info "CONNECTION LOST: #{connection.class.name}" if logger
     end
   end
 
