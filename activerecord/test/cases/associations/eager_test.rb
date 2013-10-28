@@ -857,6 +857,13 @@ class EagerAssociationTest < ActiveRecord::TestCase
     end
   end
 
+  def test_eager_with_dot_characters
+    assert_queries(2) do
+      # Before our fix, the dot character will be interpreted as table names and will cause this to run in one query
+      Comment.find :all, :conditions => "'my_comment.1' = 'my_comment.1'", :include => :post
+    end
+  end
+
   def test_preconfigured_includes_with_belongs_to
     author = posts(:welcome).author_with_posts
     assert_no_queries {assert_equal 5, author.posts.size}

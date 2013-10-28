@@ -529,9 +529,13 @@ module ActiveRecord
 
     def tables_in_string(string)
       return [] if string.blank?
+
+      # a condition value like 'any_thing.v4' will be treated as a table by the scan pattern
+      new = string.gsub(/('.*?')/, '')
+
       # always convert table names to downcase as in Oracle quoted table names are in uppercase
       # ignore raw_sql_ that is used by Oracle adapter as alias for limit/offset subqueries
-      string.scan(/([a-zA-Z_][.\w]+).?\./).flatten.map{ |s| s.downcase }.uniq - ['raw_sql_']
+      new.scan(/([a-zA-Z_][.\w]+).?\./).flatten.map{ |s| s.downcase }.uniq - ['raw_sql_']
     end
   end
 end
