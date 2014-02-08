@@ -513,17 +513,6 @@ module ActionDispatch
         end
 
         private
-          def app_name(app)
-            return unless app.respond_to?(:routes)
-
-            if app.respond_to?(:railtie_name)
-              app.railtie_name
-            else
-              class_name = app.class.is_a?(Class) ? app.name : app.class.name
-              ActiveSupport::Inflector.underscore(class_name).tr("/", "_")
-            end
-          end
-
           def define_generate_prefix(app, name)
             return unless app.respond_to?(:routes) && app.routes.respond_to?(:define_mounted_helper)
 
