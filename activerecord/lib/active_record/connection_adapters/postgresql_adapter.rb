@@ -265,7 +265,7 @@ module ActiveRecord
 
       module Errors
         LOST_CONNECTION_EXCEPTIONS  = ['PGError']
-        LOST_CONNECTION_MESSAGES    = [/no connection to the server/, /FATAL:  terminating connection due to administrator command/, /closed connection/, /server closed the connection unexpectedly/, /not connected/, /socket not open/]
+        LOST_CONNECTION_MESSAGES    = [/no connection to the server/, /FATAL:  terminating connection due to administrator command/, /closed connection/, /server closed the connection unexpectedly/, /not connected/, /socket not open/, /connection not open/]
 
         def lost_connection_exceptions
           exceptions = LOST_CONNECTION_EXCEPTIONS
@@ -385,13 +385,12 @@ module ActiveRecord
             clear_cache!
             @connection.reset
             @open_transactions = 0
+            configure_connection
           rescue *lost_connection_exceptions => e
             if e.message =~ Regexp.union(*lost_connection_messages)
               @statements.send(:cache).clear
               connect
             end
-          else
-            configure_connection
           end
         end
         active?
