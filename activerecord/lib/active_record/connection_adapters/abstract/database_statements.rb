@@ -101,11 +101,6 @@ module ActiveRecord
         exec_delete(to_sql(arel, binds), name, binds)
       end
 
-      # Executes the truncate statement.
-      def truncate(table_name, name = nil)
-        execute("TRUNCATE TABLE #{quote_table_name(table_name)}", name)
-      end
-
       # Checks whether there is currently no transaction active. This is done
       # by querying the database driver, and does not use the transaction
       # house-keeping information recorded by #increment_open_transactions and

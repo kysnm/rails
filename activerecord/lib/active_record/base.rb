@@ -433,15 +433,6 @@ module ActiveRecord #:nodoc:
         object.is_a?(self)
       end
 
-      # Truncates the table.
-      #
-      # ==== Example
-      #
-      #   Post.truncate
-      def truncate
-        connection.truncate(table_name, "#{name} Truncate")
-      end
-
       def arel_table
         @arel_table ||= Arel::Table.new(table_name, arel_engine)
       end
