@@ -36,8 +36,16 @@ module ActiveRecord
     def find_by_sql(sql, binds = [])
       logging_query_plan do
         results = connection.select_all(sanitize_sql(sql), "#{name} Load", binds)
-        ms = Benchmark.ms { results.collect! { |record| instantiate(record) } }
-        logger.debug('  %s Inst (%.1fms - %drows)' % [name || 'SQL', ms, results.length])
+
+        message_bus = ActiveSupport::Notifications.instrumenter
+        payload = {
+          record_count: results.length,
+          class_name: name
+        }
+
+        message_bus.instrument('instantiation.active_record', payload) do
+          results.collect! { |record| instantiate(record) }
+        end
         results
       end
     end

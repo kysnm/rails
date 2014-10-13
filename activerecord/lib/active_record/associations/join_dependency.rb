@@ -48,7 +48,15 @@ module ActiveRecord
         parents = {}
 
         records = nil
-        ms = Benchmark.ms do
+
+        message_bus = ActiveSupport::Notifications.instrumenter
+
+        payload = {
+          record_count: rows.length,
+          class_name: join_base.base_klass.name
+        }
+
+        message_bus.instrument('instantiation.active_record', payload) do
           records = rows.map { |model|
             primary_id = model[primary_key]
             parent = parents[primary_id] ||= join_base.instantiate(model)
@@ -58,7 +66,6 @@ module ActiveRecord
 
           remove_duplicate_results!(active_record, records, @associations)
         end
-        join_base.active_record.logger.debug('  %s Inst Including Associations (%.1fms - %drows)' % [join_base.active_record.name || 'SQL', ms, records.length])
         records
       end
 
