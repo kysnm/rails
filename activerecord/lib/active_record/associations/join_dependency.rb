@@ -53,7 +53,7 @@ module ActiveRecord
 
         payload = {
           record_count: rows.length,
-          class_name: join_base.base_klass.name
+          class_name: join_base.active_record.name
         }
 
         message_bus.instrument('instantiation.active_record', payload) do
