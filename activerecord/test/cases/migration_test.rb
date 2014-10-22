@@ -1867,6 +1867,18 @@ if ActiveRecord::Base.connection.supports_migrations?
       end
     end
 
+    def test_references_column_type_with_polymorphic_and_type
+      with_change_table do |t|
+        t.references :taggable, polymorphic: true, type: :string
+      end
+    end
+
+    def test_remove_references_column_type_with_polymorphic_and_type
+      with_change_table do |t|
+        t.remove_references :taggable, polymorphic: true, type: :string
+      end
+    end
+
     def test_remove_references_column_type_with_polymorphic_removes_type
       with_change_table do |t|
         @connection.expects(:remove_column).with(:delete_me, 'taggable_type')
