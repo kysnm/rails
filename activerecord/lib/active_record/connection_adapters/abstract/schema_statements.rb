@@ -175,12 +175,6 @@ module ActiveRecord
         create_sql << td.to_sql
         create_sql << ") #{options[:options]}"
         execute create_sql
-        
-        return if options[:id] == false
-        return unless self.respond_to?(:set_pk_sequence!)
-
-        value = ActiveRecord::Base.rails_sequence_start
-        set_pk_sequence!(table_name, value) unless value == 0
       end
 
       # A block for changing columns in +table+.
