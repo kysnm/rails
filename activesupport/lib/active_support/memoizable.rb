@@ -29,41 +29,36 @@ module ActiveSupport
       end
 
       def memoize_all
-        prime_cache
+        prime_cache ".*"
       end
 
       def unmemoize_all
-        flush_cache
+        flush_cache ".*"
       end
 
       def prime_cache(*syms)
-        if syms.empty?
-          syms = methods.collect do |m|
-            m[12..-1] if m.to_s.starts_with?("_unmemoized_")
-          end.compact
-        end
-
         syms.each do |sym|
-          m = method(:"_unmemoized_#{sym}") rescue next
-          if m.arity == 0
-            __send__(sym)
-          else
-            ivar = ActiveSupport::Memoizable.memoized_ivar_for(sym)
-            instance_variable_set(ivar, {})
+          methods.each do |m|
+            if m.to_s =~ /^_unmemoized_(#{sym})/
+              if method(m).arity == 0
+                __send__($1)
+              else
+                ivar = ActiveSupport::Memoizable.memoized_ivar_for($1)
+                instance_variable_set(ivar, {})
+              end
+            end
           end
         end
       end
 
       def flush_cache(*syms)
-        if syms.empty?
-          syms = (methods + private_methods + protected_methods).collect do |m|
-            m[12..-1] if m.to_s.starts_with?("_unmemoized_")
-          end.compact
-        end
-
         syms.each do |sym|
-          ivar = ActiveSupport::Memoizable.memoized_ivar_for(sym)
-          instance_variable_get(ivar).clear if instance_variable_defined?(ivar)
+          (methods + private_methods + protected_methods).each do |m|
+            if m.to_s =~ /^_unmemoized_(#{sym.to_s.gsub(/\?\Z/, '\?')})/
+              ivar = ActiveSupport::Memoizable.memoized_ivar_for($1)
+              instance_variable_get(ivar).clear if instance_variable_defined?(ivar)
+            end
+          end
         end
       end
     end
