@@ -93,9 +93,12 @@ HEADER
           end
 
           tbl.print "  create_table #{remove_prefix_and_suffix(table).inspect}"
+          pkcol = columns.detect { |c| c.name == pk }
           if columns.detect { |c| c.name == pk }
             if pk != 'id'
               tbl.print %Q(, :primary_key => "#{pk}")
+            elsif pkcol && pkcol.sql_type == 'bigint'
+              tbl.print ", id: :bigserial"
             end
           else
             tbl.print ", :id => false"

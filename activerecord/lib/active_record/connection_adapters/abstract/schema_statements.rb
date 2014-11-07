@@ -155,7 +155,14 @@ module ActiveRecord
       # See also TableDefinition#column for details on how to create columns.
       def create_table(table_name, options = {})
         td = table_definition
-        td.primary_key(options[:primary_key] || Base.get_primary_key(table_name.to_s.singularize)) unless options[:id] == false
+
+        unless options[:id] == false
+          pk = options.fetch(:primary_key) {
+            Base.get_primary_key table_name.to_s.singularize
+          }
+
+          td.primary_key pk
+        end
 
         yield td if block_given?
 
@@ -168,12 +175,6 @@ module ActiveRecord
         create_sql << td.to_sql
         create_sql << ") #{options[:options]}"
         execute create_sql
-        
-        return if options[:id] == false
-        return unless self.respond_to?(:set_pk_sequence!)
-
-        value = ActiveRecord::Base.rails_sequence_start
-        set_pk_sequence!(table_name, value) unless value == 0
       end
 
       # A block for changing columns in +table+.
