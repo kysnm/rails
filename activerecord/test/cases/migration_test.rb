@@ -1571,9 +1571,41 @@ if ActiveRecord::Base.connection.supports_migrations?
       ActiveRecord::Migrator.rollback(MIGRATIONS_ROOT + "/valid")
       assert_equal(0, ActiveRecord::Migrator.current_version)
 
-      ActiveRecord::Migrator.rollback(MIGRATIONS_ROOT + "/valid")
-      assert_equal(0, ActiveRecord::Migrator.current_version)
+    Person.reset_column_information
+    assert_not Person.column_methods_hash.include?(:last_name),
+     "On error, the Migrator should revert schema changes but it did not."
+  end
+
+  def test_migration_without_transaction
+    unless ActiveRecord::Base.connection.supports_ddl_transactions?
+      skip "not supported on #{ActiveRecord::Base.connection.class}"
     end
+
+    assert_not Person.column_methods_hash.include?(:last_name)
+
+    migration = Class.new(ActiveRecord::Migration) {
+      self.disable_ddl_transaction!
+
+      def version; 101 end
+      def migrate(x)
+        add_column "people", "last_name", :string
+        raise 'Something broke'
+      end
+    }.new
+
+    migrator = ActiveRecord::Migrator.new(:up, [migration], 101)
+    e = assert_raise(StandardError) { migrator.migrate }
+    assert_equal "An error has occurred, all later migrations canceled:\n\nSomething broke", e.message
+
+    Person.reset_column_information
+    assert Person.column_methods_hash.include?(:last_name),
+     "without ddl transactions, the Migrator should not rollback on error but it did."
+  ensure
+    Person.reset_column_information
+    if Person.column_methods_hash.include?(:last_name)
+      Person.connection.remove_column('people', 'last_name')
+    end
+  end
 
     def test_migrator_forward
       ActiveRecord::Migrator.migrate(MIGRATIONS_ROOT + "/valid", 1)
