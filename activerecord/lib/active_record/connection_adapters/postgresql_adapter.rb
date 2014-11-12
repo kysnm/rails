@@ -214,7 +214,7 @@ module ActiveRecord
     # * <tt>:min_messages</tt> - An optional client min messages that is used in a
     #   <tt>SET client_min_messages TO <min_messages></tt> call on the connection.
     class PostgreSQLAdapter < AbstractAdapter
-      attr_reader :database_version, :spid
+      attr_reader :spid
       cattr_accessor :auto_connect, :auto_connect_duration
 
       class TableDefinition < ActiveRecord::ConnectionAdapters::TableDefinition
@@ -359,8 +359,6 @@ module ActiveRecord
         if postgresql_version < 80200
           raise "Your version of PostgreSQL (#{postgresql_version}) is too old, please upgrade!"
         end
-
-        @database_version = select_value("SELECT version()")
 
         @local_tz = execute('SHOW TIME ZONE', 'SCHEMA').first["TimeZone"]
       end
