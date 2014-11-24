@@ -1136,7 +1136,10 @@ module ActiveRecord
         clear_cache!
         quoted_table_name = quote_table_name(table_name)
 
-        execute "ALTER TABLE #{quoted_table_name} ALTER COLUMN #{quote_column_name(column_name)} TYPE #{type_to_sql(type, options[:limit], options[:precision], options[:scale])}"
+        sql_type = type_to_sql(type, options[:limit], options[:precision], options[:scale])
+        sql = "ALTER TABLE #{quoted_table_name} ALTER COLUMN #{quote_column_name(column_name)} TYPE #{sql_type}"
+        sql << " USING #{options[:using]}" if options[:using]
+        execute sql
 
         change_column_default(table_name, column_name, options[:default]) if options_include_default?(options)
         change_column_null(table_name, column_name, options[:null], options[:default]) if options.key?(:null)
