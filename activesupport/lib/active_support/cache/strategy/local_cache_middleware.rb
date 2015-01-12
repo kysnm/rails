@@ -18,24 +18,16 @@ module ActiveSupport
             @app              = nil
           end
 
-          def new(app)
-            @app = app
+          def new
             self
           end
 
-          def call(env)
+          def start_request(req, res)
             LocalCacheRegistry.set_cache_for(local_cache_key, LocalStore.new)
-            response = @app.call(env)
-            response[2] = ::Rack::BodyProxy.new(response[2]) do
-              LocalCacheRegistry.set_cache_for(local_cache_key, nil)
-            end
-            response
-          rescue Rack::Utils::InvalidParameterError
+          end
+
+          def finish_request(req, res)
             LocalCacheRegistry.set_cache_for(local_cache_key, nil)
-            [400, {}, []]
-          rescue Exception
-            LocalCacheRegistry.set_cache_for(local_cache_key, nil)
-            raise
           end
         end
       end

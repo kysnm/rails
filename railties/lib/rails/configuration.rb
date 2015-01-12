@@ -42,6 +42,10 @@ module Rails
         @operations << [__method__, args, block]
       end
 
+      def use_event(*args, &block)
+        @operations << [__method__, args, block]
+      end
+
       alias :insert :insert_before
 
       def insert_after(*args, &block)

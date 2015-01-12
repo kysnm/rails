@@ -53,9 +53,11 @@ module ActionDispatch
     include Enumerable
 
     attr_accessor :middlewares
+    attr_reader :events
 
     def initialize(*args)
       @middlewares = []
+      @events = []
       yield(self) if block_given?
     end
 
@@ -82,6 +84,7 @@ module ActionDispatch
 
     def initialize_copy(other)
       self.middlewares = other.middlewares.dup
+      @events = other.events.dup
     end
 
     def insert(index, *args, &block)
@@ -110,6 +113,10 @@ module ActionDispatch
     def use(*args, &block)
       middleware = self.class::Middleware.new(*args, &block)
       middlewares.push(middleware)
+    end
+
+    def use_event(event)
+      @events << event
     end
 
     def build(app = nil, &block)

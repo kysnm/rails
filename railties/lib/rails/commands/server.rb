@@ -80,15 +80,22 @@ module Rails
       middlewares = []
       middlewares << [::Rack::ContentLength]
 
+
+      Hash.new(middlewares)
+    end
+
+    def event_handlers
+      events = super + app.config.middleware.events.map(&:new)
+
       # FIXME: add Rack::Lock in the case people are using webrick.
       # This is to remain backwards compatible for those who are
       # running webrick in production. We should consider removing this
       # in development.
       if server.name == 'Rack::Handler::WEBrick'
-        middlewares << [::Rack::Lock]
+        events + [::Rack::Lock.new]
+      else
+        events
       end
-
-      Hash.new(middlewares)
     end
 
     def default_options

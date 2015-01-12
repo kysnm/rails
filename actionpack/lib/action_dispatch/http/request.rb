@@ -1,5 +1,6 @@
 require 'stringio'
 
+require 'delegate'
 require 'active_support/inflector'
 require 'action_dispatch/http/headers'
 require 'action_controller/metal/exceptions'
@@ -13,7 +14,7 @@ require 'action_dispatch/http/url'
 require 'active_support/core_ext/array/conversions'
 
 module ActionDispatch
-  class Request < Rack::Request
+  class Request < SimpleDelegator
     include ActionDispatch::Http::Cache::Request
     include ActionDispatch::Http::MimeNegotiation
     include ActionDispatch::Http::Parameters
@@ -44,7 +45,8 @@ module ActionDispatch
       METHOD
     end
 
-    def initialize(env)
+
+    def initialize(req)
       super
       @method            = nil
       @request_method    = nil
@@ -360,5 +362,52 @@ module ActionDispatch
         HTTP_METHOD_LOOKUP[name] || raise(ActionController::UnknownHttpMethod, "#{name}, accepted HTTP methods are #{HTTP_METHODS[0...-1].join(', ')}, and #{HTTP_METHODS[-1]}")
         name
       end
+  end
+
+  class EngineRequest < SimpleDelegator
+    attr_reader :routes
+
+    def initialize req, routes
+      super(req)
+      @routes = routes
+      if req.script_name
+        @engine_script_name = req.script_name.dup
+      else
+        @engine_script_name = nil
+      end
+    end
+
+    def engine_script_name(_routes)
+      if _routes.object_id == routes.object_id
+        @engine_script_name
+      else
+        super
+      end
+    end
+  end
+
+  class AppRequest < Request
+    def initialize req
+      super
+      set_original_fullpath req
+    end
+
+    private
+    def set_original_fullpath(req)
+      @original_scriptname = req.script_name
+      @original_fullpath = build_original_fullpath(req)
+    end
+
+    def build_original_fullpath(req) #:nodoc:
+      path_info    = req.path_info
+      query_string = req.query_string
+      script_name  = req.script_name
+
+      if query_string.present?
+        "#{script_name}#{path_info}?#{query_string}"
+      else
+        "#{script_name}#{path_info}"
+      end
+    end
   end
 end

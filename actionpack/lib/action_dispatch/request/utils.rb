@@ -1,5 +1,5 @@
 module ActionDispatch
-  class Request < Rack::Request
+  class Request < SimpleDelegator
     class Utils # :nodoc:
 
       mattr_accessor :perform_deep_munge

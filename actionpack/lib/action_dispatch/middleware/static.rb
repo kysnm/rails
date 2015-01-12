@@ -109,17 +109,17 @@ module ActionDispatch
       @file_handler = FileHandler.new(path, cache_control)
     end
 
-    def call(env)
-      case env['REQUEST_METHOD']
+    def call(req, res)
+      case req.request_method
       when 'GET', 'HEAD'
-        path = env['PATH_INFO'].chomp('/')
+        path = req.path_info.chomp('/')
         if match = @file_handler.match?(path)
           env["PATH_INFO"] = match
           return @file_handler.call(env)
         end
       end
 
-      @app.call(env)
+      @app.call(req, res)
     end
   end
 end

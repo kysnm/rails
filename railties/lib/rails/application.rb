@@ -158,11 +158,8 @@ module Rails
 
     # Implements call according to the Rack API. It simply
     # dispatches the request to the underlying middleware stack.
-    def call(env)
-      req = ActionDispatch::Request.new env
-      env["ORIGINAL_FULLPATH"] = req.fullpath
-      env["ORIGINAL_SCRIPT_NAME"] = req.script_name
-      super(env)
+    def call(req, res)
+      super(ActionDispatch::AppRequest.new(req), res)
     end
 
     # Reload application routes regardless if they changed or not.

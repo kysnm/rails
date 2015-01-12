@@ -6,9 +6,9 @@ require 'active_support/message_verifier'
 require 'active_support/json'
 
 module ActionDispatch
-  class Request < Rack::Request
+  class Request
     def cookie_jar
-      env['action_dispatch.cookies'] ||= Cookies::CookieJar.build(self)
+      @cookie_jar ||= Cookies::CookieJar.build(self)
     end
   end
 

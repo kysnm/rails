@@ -18,10 +18,10 @@ module ActionDispatch
       @app = app
     end
 
-    def call(env)
-      req = ActionDispatch::Request.new env
+    def call(req, res)
       req.request_id = make_request_id(req.x_request_id)
-      @app.call(env).tap { |_status, headers, _body| headers[X_REQUEST_ID] = req.request_id }
+      res.set_header(X_REQUEST_ID, req.uuid)
+      @app.call(req, res)
     end
 
     private

@@ -1,12 +1,12 @@
 require 'active_support/core_ext/hash/keys'
 
 module ActionDispatch
-  class Request < Rack::Request
+  class Request < SimpleDelegator
     # Access the contents of the flash. Use <tt>flash["notice"]</tt> to
     # read a notice you put there or <tt>flash["notice"] = "hello"</tt>
     # to put a new one.
     def flash
-      @env[Flash::KEY] ||= Flash::FlashHash.from_session_value(session["flash"])
+      @flash ||= Flash::FlashHash.from_session_value(session["flash"])
     end
   end
 

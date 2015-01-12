@@ -12,24 +12,29 @@ module Rails
     # object responds to, objects that respond to +to_s+ or Proc objects that accept
     # an instance of the +request+ object.
     class Logger < ActiveSupport::LogSubscriber
-      def initialize(app, taggers = nil)
-        @app          = app
+      def initialize(taggers = nil)
         @taggers      = taggers || []
       end
 
-      def call(env)
-        request = ActionDispatch::Request.new(env)
+      def new; self; end
 
+      def start_request(request, res)
         if logger.respond_to?(:tagged)
-          logger.tagged(compute_tags(request)) { call_app(request, env) }
-        else
-          call_app(request, env)
+          logger.tagged(compute_tags(request)) { call_app(request) }
+          call_app request
+        end
+      end
+
+      def finish_request(req, res)
+        if logger.respond_to?(:tagged)
+          finish req
+          ActiveSupport::LogSubscriber.flush_all!
         end
       end
 
     protected
 
-      def call_app(request, env)
+      def call_app(request)
         # Put some space between requests in development logs.
         if development?
           logger.debug ''
@@ -39,14 +44,6 @@ module Rails
         instrumenter = ActiveSupport::Notifications.instrumenter
         instrumenter.start 'request.action_dispatch', request: request
         logger.info { started_request_message(request) }
-        resp = @app.call(env)
-        resp[2] = ::Rack::BodyProxy.new(resp[2]) { finish(request) }
-        resp
-      rescue Exception
-        finish(request)
-        raise
-      ensure
-        ActiveSupport::LogSubscriber.flush_all!
       end
 
       # Started GET "/session/new" for 127.0.0.1 at 2012-09-26 14:51:42 -0700
