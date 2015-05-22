@@ -26,25 +26,25 @@ module ActionDispatch
       @exceptions_app = exceptions_app
     end
 
-    def call(env)
-      @app.call(env)
+    def call(req, res)
+      @app.call(req, res)
     rescue Exception => exception
-      if env['action_dispatch.show_exceptions'] == false
+      if req.get_header('action_dispatch.show_exceptions') == false
         raise exception
       else
-        render_exception(env, exception)
+        render_exception(req, res, exception)
       end
     end
 
     private
 
-    def render_exception(env, exception)
-      wrapper = ExceptionWrapper.new(env, exception)
+    def render_exception(req, res, exception)
+      wrapper = ExceptionWrapper.new(req, exception)
       status  = wrapper.status_code
-      env["action_dispatch.exception"] = wrapper.exception
-      env["action_dispatch.original_path"] = env["PATH_INFO"]
-      env["PATH_INFO"] = "/#{status}"
-      response = @exceptions_app.call(env)
+      req.set_header("action_dispatch.exception", wrapper.exception)
+      req.set_header("action_dispatch.original_path", req.path_info)
+      req.path_info = "/#{status}"
+      response = @exceptions_app.call(req, res)
       response[1]['X-Cascade'] == 'pass' ? pass_response(status) : response
     rescue Exception => failsafe_error
       $stderr.puts "Error during failsafe response: #{failsafe_error}\n  #{failsafe_error.backtrace * "\n  "}"

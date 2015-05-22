@@ -159,7 +159,7 @@ module Rails
     # Implements call according to the Rack API. It simply
     # dispatches the request to the underlying middleware stack.
     def call(req, res)
-      super(ActionDispatch::AppRequest.new(req), res)
+      super(req, res)
     end
 
     # Reload application routes regardless if they changed or not.

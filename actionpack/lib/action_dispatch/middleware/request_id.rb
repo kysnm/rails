@@ -20,8 +20,7 @@ module ActionDispatch
 
     def call(req, res)
       req.request_id = make_request_id(req.x_request_id)
-      res.set_header(X_REQUEST_ID, req.uuid)
-      @app.call(req, res)
+      @app.call(env).tap { |_status, headers, _body| headers[X_REQUEST_ID] = req.request_id }
     end
 
     private

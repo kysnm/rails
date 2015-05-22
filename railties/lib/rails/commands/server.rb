@@ -98,6 +98,16 @@ module Rails
       end
     end
 
+    class Container < ::Rack::Server::Container
+      def wrap_request(req)
+        ActionDispatch::AppRequest.new(req)
+      end
+    end
+
+    def create_container(event_handlers, app)
+      Container.new event_handlers, app
+    end
+
     def default_options
       super.merge({
         Port:               3000,

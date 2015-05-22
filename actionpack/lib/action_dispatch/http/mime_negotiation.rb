@@ -52,7 +52,7 @@ module ActionDispatch
       end
 
       def formats
-        @env["action_dispatch.request.formats"] ||= begin
+        get_header("action_dispatch.request.formats") ||= begin
           params_readable = begin
                               parameters[:format]
                             rescue ActionController::BadRequest
