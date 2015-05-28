@@ -15,22 +15,21 @@ module ActionDispatch
 
     DEFAULT_PARSERS = { Mime::JSON => :json }
 
-    def initialize(app, parsers = {})
-      @app, @parsers = app, DEFAULT_PARSERS.merge(parsers)
+    def initialize(parsers = {})
+      @parsers = DEFAULT_PARSERS.merge(parsers)
     end
 
-    def call(env)
-      if params = parse_formatted_parameters(env)
-        env["action_dispatch.request.request_parameters"] = params
+    def start_request(req, res)
+      if params = parse_formatted_parameters(req)
+        req.set_header "action_dispatch.request.request_parameters", params
       end
+    end
 
-      @app.call(env)
+    def finish_request(req, res)
     end
 
     private
-      def parse_formatted_parameters(env)
-        request = Request.new(env)
-
+      def parse_formatted_parameters(request)
         return false if request.content_length.zero?
 
         strategy = @parsers[request.content_mime_type]
@@ -48,13 +47,13 @@ module ActionDispatch
           false
         end
       rescue => e # JSON or Ruby code block errors
-        logger(env).debug "Error occurred while parsing request parameters.\nContents:\n\n#{request.raw_post}"
+        logger(request).debug "Error occurred while parsing request parameters.\nContents:\n\n#{request.raw_post}"
 
         raise ParseError.new(e.message, e)
       end
 
-      def logger(env)
-        env['action_dispatch.logger'] || ActiveSupport::Logger.new($stderr)
+      def logger(req)
+        req.get_header('action_dispatch.logger') || ActiveSupport::Logger.new($stderr)
       end
   end
 end

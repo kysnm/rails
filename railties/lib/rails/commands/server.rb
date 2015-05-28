@@ -85,7 +85,7 @@ module Rails
     end
 
     def event_handlers
-      events = super + app.config.middleware.events.map(&:new)
+      events = super + app.config.middleware.events
 
       # FIXME: add Rack::Lock in the case people are using webrick.
       # This is to remain backwards compatible for those who are

@@ -38,7 +38,7 @@ module Rails
           middleware.use ::ActionDispatch::RemoteIp, config.action_dispatch.ip_spoofing_check, config.action_dispatch.trusted_proxies
 
           unless config.cache_classes
-            middleware.use ::ActionDispatch::Reloader, lambda { reload_dependencies? }
+            middleware.use_event ::ActionDispatch::Reloader, lambda { reload_dependencies? }
           end
 
           middleware.use ::ActionDispatch::Callbacks
@@ -49,10 +49,10 @@ module Rails
               config.session_options[:secure] = true
             end
             middleware.use config.session_store, config.session_options
-            middleware.use ::ActionDispatch::Flash
+            middleware.use_event ::ActionDispatch::Flash
           end
 
-          middleware.use ::ActionDispatch::ParamsParser
+          middleware.use_event ::ActionDispatch::ParamsParser
           middleware.use ::Rack::Head
           middleware.use ::Rack::ConditionalGet
           middleware.use ::Rack::ETag, "no-cache"

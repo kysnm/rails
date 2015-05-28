@@ -73,17 +73,17 @@ module ActionDispatch
     # without calculating the IP to keep from slowing down the majority of
     # requests. For those requests that do need to know the IP, the
     # GetIp#calculate_ip method will calculate the memoized client IP address.
-    def call(env)
-      env["action_dispatch.remote_ip"] = GetIp.new(env, self)
-      @app.call(env)
+    def call(req, res)
+      req.set_header("action_dispatch.remote_ip", GetIp.new(req, self))
+      @app.call(req, res)
     end
 
     # The GetIp class exists as a way to defer processing of the request data
     # into an actual IP address. If the ActionDispatch::Request#remote_ip method
     # is called, this class will calculate the value and then memoize it.
     class GetIp
-      def initialize(env, middleware)
-        @env      = env
+      def initialize(req, middleware)
+        @env      = req
         @check_ip = middleware.check_ip
         @proxies  = middleware.proxies
       end
@@ -148,7 +148,7 @@ module ActionDispatch
 
       def ips_from(header)
         # Split the comma-separated list into an array of strings
-        ips = @env[header] ? @env[header].strip.split(/[,\s]+/) : []
+        ips = @env.get_header(header) ? @env.get_header(header).strip.split(/[,\s]+/) : []
         ips.select do |ip|
           begin
             # Only return IPs that are valid according to the IPAddr#new method

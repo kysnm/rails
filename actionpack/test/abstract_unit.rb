@@ -128,7 +128,7 @@ class ActionDispatch::IntegrationTest < ActiveSupport::TestCase
       middleware.use "ActionDispatch::Callbacks"
       middleware.use "ActionDispatch::ParamsParser"
       middleware.use "ActionDispatch::Cookies"
-      middleware.use "ActionDispatch::Flash"
+      middleware.use_event ActionDispatch::Flash
       middleware.use "Rack::Head"
       yield(middleware) if block_given?
     end

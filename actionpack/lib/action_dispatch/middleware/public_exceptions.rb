@@ -21,7 +21,10 @@ module ActionDispatch
       content_type = request.formats.first
       body         = { :status => status, :error => Rack::Utils::HTTP_STATUS_CODES.fetch(status, Rack::Utils::HTTP_STATUS_CODES[500]) }
 
-      render(status, content_type, body)
+      status, headers, body = render(status, content_type, body)
+      response.write_head status, headers
+      body.each { |chunk| response.write chunk }
+      response.finish
     end
 
     private

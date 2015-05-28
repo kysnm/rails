@@ -197,8 +197,7 @@ module ActionController
 
     def set_request!(request) #:nodoc:
       @_request = request
-      @_env = request.env
-      @_env['action_controller.instance'] = self
+      request.set_header 'action_controller.instance', self
     end
 
     def to_a #:nodoc:
@@ -231,14 +230,25 @@ module ActionController
       action(req.path_parameters[:action]).call(env)
     end
 
+    class DispatchAdapter
+      def initialize(app, name)
+        @app = app
+        @name = name
+      end
+
+      def call(req, res)
+        @app.dispatch @name, req
+      end
+    end
+
     # Returns a Rack endpoint for the given action name.
     def self.action(name, klass = ActionDispatch::Request)
       if middleware_stack.any?
-        middleware_stack.build(name) do |env|
+        middleware_stack.build(name) do |req, res|
           new.dispatch(name, klass.new(env))
         end
       else
-        lambda { |env| new.dispatch(name, klass.new(env)) }
+        DispatchAdapter.new(new, name)
       end
     end
   end

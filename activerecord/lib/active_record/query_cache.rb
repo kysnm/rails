@@ -23,25 +23,17 @@ module ActiveRecord
       end
     end
 
-    def initialize(app)
-      @app = app
+    def start_request(req, res)
+      connection    = ActiveRecord::Base.connection
+      connection.enable_query_cache!
     end
 
-    def call(env)
+    def finish_request(req, res)
       connection    = ActiveRecord::Base.connection
       enabled       = connection.query_cache_enabled
       connection_id = ActiveRecord::Base.connection_id
-      connection.enable_query_cache!
 
-      response = @app.call(env)
-      response[2] = Rack::BodyProxy.new(response[2]) do
-        restore_query_cache_settings(connection_id, enabled)
-      end
-
-      response
-    rescue Exception => e
       restore_query_cache_settings(connection_id, enabled)
-      raise e
     end
 
     private

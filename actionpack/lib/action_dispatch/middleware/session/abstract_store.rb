@@ -65,8 +65,8 @@ module ActionDispatch
     end
 
     module SessionObject # :nodoc:
-      def prepare_session(env)
-        Request::Session.create(self, env, @default_options)
+      def prepare_session(request)
+        Request::Session.create(self, request, @default_options)
       end
 
       def loaded_session?(session)

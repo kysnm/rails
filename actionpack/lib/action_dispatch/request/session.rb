@@ -9,38 +9,38 @@ module ActionDispatch
 
       # Singleton object used to determine if an optional param wasn't specified
       Unspecified = Object.new
-      
+
       # Creates a session hash, merging the properties of the previous session if any
-      def self.create(store, env, default_options)
-        session_was = find env
-        session     = Request::Session.new(store, env)
+      def self.create(store, req, default_options)
+        session_was = find req
+        session     = Request::Session.new(store, req)
         session.merge! session_was if session_was
 
-        set(env, session)
-        Options.set(env, Request::Session::Options.new(store, env, default_options))
+        set(req, session)
+        Options.set(req, Request::Session::Options.new(store, req, default_options))
         session
       end
 
-      def self.find(env)
-        env[ENV_SESSION_KEY]
+      def self.find(req)
+        req.get_header ENV_SESSION_KEY
       end
 
-      def self.set(env, session)
-        env[ENV_SESSION_KEY] = session
+      def self.set(req, session)
+        req.set_header ENV_SESSION_KEY, session
       end
 
       class Options #:nodoc:
-        def self.set(env, options)
-          env[ENV_SESSION_OPTIONS_KEY] = options
+        def self.set(req, options)
+          req.set_header ENV_SESSION_OPTIONS_KEY, options
         end
 
-        def self.find(env)
-          env[ENV_SESSION_OPTIONS_KEY]
+        def self.find(req)
+          req.get_header ENV_SESSION_OPTIONS_KEY
         end
 
-        def initialize(by, env, default_options)
+        def initialize(by, req, default_options)
           @by       = by
-          @env      = env
+          @env      = req
           @delegate = default_options.dup
         end
 
@@ -59,9 +59,9 @@ module ActionDispatch
         def values_at(*args); @delegate.values_at(*args); end
       end
 
-      def initialize(by, env)
+      def initialize(by, req)
         @by       = by
-        @env      = env
+        @env      = req
         @delegate = {}
         @loaded   = false
         @exists   = nil # we haven't checked yet

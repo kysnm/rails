@@ -26,7 +26,7 @@ module ActionDispatch
         @routes = routes
       end
 
-      def serve(req)
+      def serve(req, res)
         find_routes(req).each do |match, parameters, route|
           set_params  = req.path_parameters
           path_info   = req.path_info
@@ -40,16 +40,14 @@ module ActionDispatch
 
           req.path_parameters = set_params.merge parameters
 
-          status, headers, body = route.app.serve(req)
+          route.app.serve(req, res)
 
-          if 'pass' == headers['X-Cascade']
+          if 'pass' == req.get_header('X-Cascade')
             req.script_name     = script_name
             req.path_info       = path_info
             req.path_parameters = set_params
             next
           end
-
-          return [status, headers, body]
         end
 
         return [404, {'X-Cascade' => 'pass'}, ['Not Found']]

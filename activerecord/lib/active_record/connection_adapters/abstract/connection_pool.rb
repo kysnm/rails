@@ -949,22 +949,11 @@ module ActiveRecord
     end
 
     class ConnectionManagement
-      def initialize(app)
-        @app = app
-      end
+      def start_request(req, res); end
 
-      def call(env)
-        testing = env['rack.test']
-
-        response = @app.call(env)
-        response[2] = ::Rack::BodyProxy.new(response[2]) do
-          ActiveRecord::Base.clear_active_connections! unless testing
-        end
-
-        response
-      rescue Exception
+      def finish_request(req, res)
+        testing = req.get_header 'rack.test'
         ActiveRecord::Base.clear_active_connections! unless testing
-        raise
       end
     end
   end

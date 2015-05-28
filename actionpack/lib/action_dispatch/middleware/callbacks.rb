@@ -22,11 +22,11 @@ module ActionDispatch
       @app = app
     end
 
-    def call(env)
+    def call(req, res)
       error = nil
       result = run_callbacks :call do
         begin
-          @app.call(env)
+          @app.call(req, res)
         rescue => error
         end
       end

@@ -50,7 +50,7 @@ module ActionDispatch
     protected
 
       def parameter_filter
-        parameter_filter_for @env.fetch("action_dispatch.parameter_filter") {
+        parameter_filter_for get_header("action_dispatch.parameter_filter") {
           return NULL_PARAM_FILTER
         }
       end

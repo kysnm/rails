@@ -29,6 +29,7 @@ module ActionDispatch
     def call(req, res)
       @app.call(req, res)
     rescue Exception => exception
+      raise
       if req.get_header('action_dispatch.show_exceptions') == false
         raise exception
       else
@@ -44,11 +45,14 @@ module ActionDispatch
       req.set_header("action_dispatch.exception", wrapper.exception)
       req.set_header("action_dispatch.original_path", req.path_info)
       req.path_info = "/#{status}"
-      response = @exceptions_app.call(req, res)
-      response[1]['X-Cascade'] == 'pass' ? pass_response(status) : response
+      @exceptions_app.call(req, res)
+      # What does "passing a response" mean in an exception handler?
+      # response[1]['X-Cascade'] == 'pass' ? pass_response(status) : response
     rescue Exception => failsafe_error
       $stderr.puts "Error during failsafe response: #{failsafe_error}\n  #{failsafe_error.backtrace * "\n  "}"
-      FAILSAFE_RESPONSE
+      res.status = 500
+      res.set_header 'Content-Type', 'text/plain'
+      res.write FAILSAFE_RESPONSE.last
     end
 
     def pass_response(status)

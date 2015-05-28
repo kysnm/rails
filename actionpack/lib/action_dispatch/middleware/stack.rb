@@ -43,6 +43,10 @@ module ActionDispatch
         klass.new(app, *args, &block)
       end
 
+      def build_event
+        klass.new(*args, &block)
+      end
+
     private
 
       def normalize(object)
@@ -115,8 +119,8 @@ module ActionDispatch
       middlewares.push(middleware)
     end
 
-    def use_event(event)
-      @events << event
+    def use_event(klass, *args, &block)
+      @events << klass.new(*args, &block)
     end
 
     def build(app = nil, &block)

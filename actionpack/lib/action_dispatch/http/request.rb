@@ -40,7 +40,7 @@ module ActionDispatch
     ENV_METHODS.each do |env|
       class_eval <<-METHOD, __FILE__, __LINE__ + 1
         def #{env.sub(/^HTTP_/n, '').downcase}  # def accept_charset
-          @env["#{env}"]                        #   @env["HTTP_ACCEPT_CHARSET"]
+          get_header("#{env}")                        #   @env["HTTP_ACCEPT_CHARSET"]
         end                                     # end
       METHOD
     end
@@ -233,7 +233,7 @@ module ActionDispatch
     # (case-insensitive), which may need to be manually added depending on the
     # choice of JavaScript libraries and frameworks.
     def xml_http_request?
-      @env['HTTP_X_REQUESTED_WITH'] =~ /XMLHttpRequest/i
+      get_header('HTTP_X_REQUESTED_WITH') =~ /XMLHttpRequest/i
     end
     alias :xhr? :xml_http_request?
 
@@ -265,7 +265,7 @@ module ActionDispatch
     alias_method :uuid, :request_id
 
     def x_request_id
-      @env[HTTP_X_REQUEST_ID]
+      get_header HTTP_X_REQUEST_ID
     end
 
     # Returns the lowercase name of the HTTP server software.
@@ -324,7 +324,9 @@ module ActionDispatch
 
     # Override Rack's GET method to support indifferent access
     def GET
-      @env["action_dispatch.request.query_parameters"] ||= Utils.deep_munge(normalize_encode_params(super || {}))
+      get_header "action_dispatch.request.query_parameters" do |k|
+        set_header k, Utils.deep_munge(normalize_encode_params(super || {}))
+      end
     rescue Rack::Utils::ParameterTypeError, Rack::Utils::InvalidParameterError => e
       raise ActionController::BadRequest.new(:query, e)
     end
@@ -332,7 +334,9 @@ module ActionDispatch
 
     # Override Rack's POST method to support indifferent access
     def POST
-      @env["action_dispatch.request.request_parameters"] ||= Utils.deep_munge(normalize_encode_params(super || {}))
+      get_header "action_dispatch.request.request_parameters" do |k|
+        set_header k, Utils.deep_munge(normalize_encode_params(super || {}))
+      end
     rescue Rack::Utils::ParameterTypeError, Rack::Utils::InvalidParameterError => e
       raise ActionController::BadRequest.new(:request, e)
     end

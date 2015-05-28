@@ -43,16 +43,16 @@ module ActionDispatch
       @routes_app = routes_app
     end
 
-    def call(env)
-      _, headers, body = response = @app.call(env)
+    def call(req, res)
+      @app.call(req, res)
 
-      if headers['X-Cascade'] == 'pass'
+      # FIXME: what does this mean in the context of req / res lifecycle?
+      if res.get_header('X-Cascade') == 'pass'
         body.close if body.respond_to?(:close)
         raise ActionController::RoutingError, "No route matches [#{env['REQUEST_METHOD']}] #{env['PATH_INFO'].inspect}"
       end
-
-      response
     rescue Exception => exception
+      raise
       raise exception if env['action_dispatch.show_exceptions'] == false
       render_exception(env, exception)
     end

@@ -258,19 +258,15 @@ module ActionDispatch
       end
     end
 
-    def initialize(app)
-      @app = app
-    end
+    def start_request(req, res); end
 
-    def call(env)
-      @app.call(env)
-    ensure
-      session    = Request::Session.find(env) || {}
-      flash_hash = env[KEY]
+    def finish_request(req, res)
+      session    = Request::Session.find(req) || {}
+      flash_hash = req.get_header KEY
 
       if flash_hash && (flash_hash.present? || session.key?('flash'))
         session["flash"] = flash_hash.to_session_value
-        env[KEY] = flash_hash.dup
+        req.set_header KEY, flash_hash.dup
       end
 
       if (!session.respond_to?(:loaded?) || session.loaded?) && # (reset_session uses {}, which doesn't implement #loaded?)

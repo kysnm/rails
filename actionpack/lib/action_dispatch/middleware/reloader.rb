@@ -66,17 +66,13 @@ module ActionDispatch
       @validated = true
     end
 
-    def call(env)
+    def start_request(req, res)
       @validated = @condition.call
       prepare!
+    end
 
-      response = @app.call(env)
-      response[2] = ::Rack::BodyProxy.new(response[2]) { cleanup! }
-
-      response
-    rescue Exception
+    def finish_request(req, res)
       cleanup!
-      raise
     end
 
     def prepare! #:nodoc:

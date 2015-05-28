@@ -28,7 +28,7 @@ module ActionDispatch
 
         def dispatcher?; true; end
 
-        def serve(req)
+        def serve(req, res)
           req.check_path_parameters!
           params = req.path_parameters
 
@@ -39,7 +39,7 @@ module ActionDispatch
             return [404, {'X-Cascade' => 'pass'}, []]
           end
 
-          dispatch(controller, params[:action], req.env)
+          dispatch(controller, params[:action], req, res)
         end
 
         def prepare_params!(params)
@@ -69,8 +69,8 @@ module ActionDispatch
           ActiveSupport::Dependencies.constantize(const_name)
         end
 
-        def dispatch(controller, action, env)
-          controller.action(action).call(env)
+        def dispatch(controller, action, req, res)
+          controller.action(action).call(req, res)
         end
 
         def normalize_controller!(params)
@@ -763,10 +763,9 @@ module ActionDispatch
         url_strategy.call options
       end
 
-      def call(env)
-        req = request_class.new(env)
+      def call(req, res)
         req.path_info = Journey::Router::Utils.normalize_path(req.path_info)
-        @router.serve(req)
+        @router.serve(req, res)
       end
 
       def recognize_path(path, environment = {})

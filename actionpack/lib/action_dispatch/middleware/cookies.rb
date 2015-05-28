@@ -567,10 +567,10 @@ module ActionDispatch
       @app = app
     end
 
-    def call(env)
-      status, headers, body = @app.call(env)
+    def call(req, res)
+      @app.call(req, res)
 
-      if cookie_jar = env['action_dispatch.cookies']
+      if cookie_jar = req.get_header('action_dispatch.cookies')
         unless cookie_jar.committed?
           cookie_jar.write(headers)
           if headers[HTTP_HEADER].respond_to?(:join)
@@ -578,8 +578,6 @@ module ActionDispatch
           end
         end
       end
-
-      [status, headers, body]
     end
   end
 end
