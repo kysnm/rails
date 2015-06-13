@@ -232,6 +232,10 @@ class Rack::TestCase < ActionDispatch::IntegrationTest
 end
 
 module ActionController
+  class API
+    extend AbstractController::Railties::RoutesHelpers.with(SharedTestRoutes)
+  end
+
   class Base
     # This stub emulates the Railtie including the URL helpers from a Rails application
     extend AbstractController::Railties::RoutesHelpers.with(SharedTestRoutes)
@@ -380,7 +384,7 @@ module RoutingTestHelpers
 end
 
 class ResourcesController < ActionController::Base
-  def index() render :nothing => true end
+  def index() head :ok end
   alias_method :show, :index
 end
 

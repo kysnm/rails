@@ -74,7 +74,7 @@ module ActionDispatch
     # requests. For those requests that do need to know the IP, the
     # GetIp#calculate_ip method will calculate the memoized client IP address.
     def call(req, res)
-      req.set_header("action_dispatch.remote_ip", GetIp.new(req, self))
+      req.set_header("action_dispatch.remote_ip", GetIp.new(req, check_ip, proxies))
       @app.call(req, res)
     end
 
@@ -82,10 +82,11 @@ module ActionDispatch
     # into an actual IP address. If the ActionDispatch::Request#remote_ip method
     # is called, this class will calculate the value and then memoize it.
     class GetIp
-      def initialize(req, middleware)
+      def initialize(req, check_ip, proxies)
         @env      = req
-        @check_ip = middleware.check_ip
-        @proxies  = middleware.proxies
+        @env      = env
+        @check_ip = check_ip
+        @proxies  = proxies
       end
 
       # Sort through the various IP address headers, looking for the IP most

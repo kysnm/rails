@@ -16,6 +16,7 @@ require 'models/joke'
 require 'models/matey'
 require 'models/parrot'
 require 'models/pirate'
+require 'models/doubloon'
 require 'models/post'
 require 'models/randomly_named_c1'
 require 'models/reply'
@@ -691,7 +692,7 @@ end
 
 class FoxyFixturesTest < ActiveRecord::TestCase
   fixtures :parrots, :parrots_pirates, :pirates, :treasures, :mateys, :ships, :computers,
-           :developers, :"admin/accounts", :"admin/users", :live_parrots, :dead_parrots
+           :developers, :"admin/accounts", :"admin/users", :live_parrots, :dead_parrots, :books
 
   if ActiveRecord::Base.connection.adapter_name == 'PostgreSQL'
     require 'models/uuid_parent'
@@ -841,6 +842,13 @@ class FoxyFixturesTest < ActiveRecord::TestCase
     assert admin_accounts(:signals37).users.include?(admin_users(:david))
     assert_equal 2, admin_accounts(:signals37).users.size
   end
+
+  def test_resolves_enums
+    assert books(:awdr).published?
+    assert books(:awdr).read?
+    assert books(:rfr).proposed?
+    assert books(:ddd).published?
+  end
 end
 
 class ActiveSupportSubclassWithFixturesTest < ActiveRecord::TestCase
@@ -894,5 +902,14 @@ class FixturesWithDefaultScopeTest < ActiveRecord::TestCase
 
   test "allows access to fixtures excluded by a default scope" do
     assert_equal "special", bulbs(:special).name
+  end
+end
+
+class FixturesWithAbstractBelongsTo < ActiveRecord::TestCase
+  fixtures :pirates, :doubloons
+
+  test "creates fixtures with belongs_to associations defined in abstract base classes" do
+    assert_not_nil doubloons(:blackbeards_doubloon)
+    assert_equal pirates(:blackbeard), doubloons(:blackbeards_doubloon).pirate
   end
 end

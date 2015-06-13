@@ -24,6 +24,11 @@ class TestControllerWithExtraEtags < ActionController::Base
   end
 end
 
+class ImplicitRenderTestController < ActionController::Base
+  def empty_action
+  end
+end
+
 class TestController < ActionController::Base
   protect_from_forgery
 
@@ -118,6 +123,10 @@ class TestController < ActionController::Base
     response.headers['Cache-Control'] = 'no-transform'
     expires_now
     render :action => 'hello_world'
+  end
+
+  def respond_with_empty_body
+    render nothing: true
   end
 
   def conditional_hello_with_bangs
@@ -268,6 +277,12 @@ class ExpiresInRenderTest < ActionController::TestCase
     get :conditional_hello_with_cache_control_headers
     assert_match(/no-cache/, @response.headers["Cache-Control"])
     assert_match(/no-transform/, @response.headers["Cache-Control"])
+  end
+
+  def test_render_nothing_deprecated
+    assert_deprecated do
+      get :respond_with_empty_body
+    end
   end
 
   def test_date_header_when_expires_in
@@ -450,6 +465,15 @@ class MetalRenderTest < ActionController::TestCase
   def test_access_to_logger_in_view
     get :accessing_logger_in_template
     assert_equal "NilClass", @response.body
+  end
+end
+
+class ImplicitRenderTest < ActionController::TestCase
+  tests ImplicitRenderTestController
+
+  def test_implicit_no_content_response
+    get :empty_action
+    assert_response :no_content
   end
 end
 

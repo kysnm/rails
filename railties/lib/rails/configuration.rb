@@ -78,7 +78,7 @@ module Rails
     end
 
     class Generators #:nodoc:
-      attr_accessor :aliases, :options, :templates, :fallbacks, :colorize_logging
+      attr_accessor :aliases, :options, :templates, :fallbacks, :colorize_logging, :api_only
       attr_reader :hidden_namespaces
 
       def initialize
@@ -87,6 +87,7 @@ module Rails
         @fallbacks = {}
         @templates = []
         @colorize_logging = true
+        @api_only = false
         @hidden_namespaces = []
       end
 

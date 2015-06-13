@@ -1,3 +1,34 @@
+*   Adds`Rack::Utils::ParameterTypeError` and `Rack::Utils::InvalidParameterError`
+    to the rescue_responses hash in `ExceptionWrapper` (Rack recommends
+    integrators serve 400s for both of these).
+
+    *Grey Baker*
+
+*   Add support for API only apps.
+    ActionController::API is added as a replacement of
+    ActionController::Base for this kind of applications.
+
+    *Santiago Pastorino & Jorge Bejar*
+
+*   Remove `assigns` and `assert_template`. Both methods have been extracted
+    into a gem at https://github.com/rails/rails-controller-testing.
+
+    See #18950.
+
+    *Alan Guo Xiang Tan*
+
+*   `FileHandler` and `Static` middleware initializers accept `index` argument
+    to configure the directory index file name. Defaults to `index` (as in
+    `index.html`).
+
+    See #20017.
+
+    *Eliot Sykes*
+
+*   Deprecate `:nothing` option for `render` method.
+
+    *Mehmet Emin İNAÇ*
+
 *   Fix `rake routes` not showing the right format when
     nesting multiple routes.
 
@@ -49,6 +80,16 @@
     `Actiondispatch::Http:URL.host` to raise a `NoMethodError`.
 
     *Adam Forsyth*
+
+*   Allow `Bearer` as token-keyword in `Authorization-Header`.
+
+    Aditionally to `Token`, the keyword `Bearer` is acceptable as a keyword
+    for the auth-token. The `Bearer` keyword is described in the original
+    OAuth RFC and used in libraries like Angular-JWT.
+
+    See #19094.
+
+    *Peter Schröder*
 
 *   Drop request class from RouteSet constructor.
 

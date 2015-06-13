@@ -266,7 +266,6 @@ module ActiveRecord
     #   others.find(*args)                |   X   |    X     |    X
     #   others.exists?                    |   X   |    X     |    X
     #   others.distinct                   |   X   |    X     |    X
-    #   others.uniq                       |   X   |    X     |    X
     #   others.reset                      |   X   |    X     |    X
     #
     # === Overriding generated methods
@@ -956,20 +955,16 @@ module ActiveRecord
     # The +traps+ association on +Dungeon+ and the +dungeon+ association on +Trap+ are
     # the inverse of each other and the inverse of the +dungeon+ association on +EvilWizard+
     # is the +evil_wizard+ association on +Dungeon+ (and vice-versa). By default,
-    # Active Record doesn't know anything about these inverse relationships and so no object
-    # loading optimization is possible. For example:
+    # Active Record can guess the inverse of the association based on the name
+    # of the class. The result is the following:
     #
     #    d = Dungeon.first
     #    t = d.traps.first
-    #    d.level == t.dungeon.level # => true
-    #    d.level = 10
-    #    d.level == t.dungeon.level # => false
+    #    d.object_id == t.dungeon.object_id # => true
     #
     # The +Dungeon+ instances +d+ and <tt>t.dungeon</tt> in the above example refer to
-    # the same object data from the database, but are actually different in-memory copies
-    # of that data. Specifying the <tt>:inverse_of</tt> option on associations lets you tell
-    # Active Record about inverse relationships and it will optimise object loading. For
-    # example, if we changed our model definitions to:
+    # the same in-memory instance since the association matches the name of the class.
+    # The result would be the same if we added +:inverse_of+ to our model definitions:
     #
     #    class Dungeon < ActiveRecord::Base
     #      has_many :traps, inverse_of: :dungeon
@@ -984,14 +979,13 @@ module ActiveRecord
     #      belongs_to :dungeon, inverse_of: :evil_wizard
     #    end
     #
-    # Then, from our code snippet above, +d+ and <tt>t.dungeon</tt> are actually the same
-    # in-memory instance and our final <tt>d.level == t.dungeon.level</tt> will return +true+.
-    #
     # There are limitations to <tt>:inverse_of</tt> support:
     #
     # * does not work with <tt>:through</tt> associations.
     # * does not work with <tt>:polymorphic</tt> associations.
     # * for +belongs_to+ associations +has_many+ inverse associations are ignored.
+    #
+    # For more information, see the documentation for the +:inverse_of+ option.
     #
     # == Deleting from associations
     #
@@ -1738,7 +1732,7 @@ module ActiveRecord
         hm_options[:through] = middle_reflection.name
         hm_options[:source] = join_model.right_reflection.name
 
-        [:before_add, :after_add, :before_remove, :after_remove, :autosave, :validate, :join_table, :class_name].each do |k|
+        [:before_add, :after_add, :before_remove, :after_remove, :autosave, :validate, :join_table, :class_name, :extend].each do |k|
           hm_options[k] = options[k] if options.key? k
         end
 

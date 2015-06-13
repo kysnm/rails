@@ -615,7 +615,6 @@ module ActiveRecord
     # a list of rows to insert to that table.
     def table_rows
       now = config.default_timezone == :utc ? Time.now.utc : Time.now
-      now = now.to_s(:db)
 
       # allow a standard key to be used for doing defaults in YAML
       fixtures.delete('DEFAULTS')
@@ -644,6 +643,11 @@ module ActiveRecord
             row[primary_key_name] = ActiveRecord::FixtureSet.identify(label, primary_key_type)
           end
 
+          # Resolve enums
+          model_class.defined_enums.each do |name, values|
+            row[name] = values.fetch(row[name], row[name])
+          end
+
           # If STI is used, find the correct subclass for association reflection
           reflection_class =
             if row.include?(inheritance_column_name)
@@ -664,7 +668,7 @@ module ActiveRecord
                   row[association.foreign_type] = $1
                 end
 
-                fk_type = association.active_record.type_for_attribute(fk_name).type
+                fk_type = reflection_class.type_for_attribute(fk_name).type
                 row[fk_name] = ActiveRecord::FixtureSet.identify(value, fk_type)
               end
             when :has_many

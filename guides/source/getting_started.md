@@ -400,7 +400,7 @@ a controller called `ArticlesController`. You can do this by running this
 command:
 
 ```bash
-$ bin/rails g controller articles
+$ bin/rails generate controller articles
 ```
 
 If you open up the newly generated `app/controllers/articles_controller.rb`
@@ -1240,7 +1240,9 @@ article we want to show the form back to the user.
 We reuse the `article_params` method that we defined earlier for the create
 action.
 
-TIP: It is not necessary to pass all the attributes to `update`. For example, if `@article.update(title: 'A new title')` were called, Rails would only update the `title` attribute, leaving all other attributes untouched.
+TIP: It is not necessary to pass all the attributes to `update`. For example,
+if `@article.update(title: 'A new title')` was called, Rails would only update
+the `title` attribute, leaving all other attributes untouched.
 
 Finally, we want to show a link to the `edit` action in the list of all the
 articles, so let's add that now to `app/views/articles/index.html.erb` to make

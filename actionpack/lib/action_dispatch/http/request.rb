@@ -143,47 +143,11 @@ module ActionDispatch
       HTTP_METHOD_LOOKUP[method]
     end
 
-    # Is this a GET (or HEAD) request?
-    # Equivalent to <tt>request.request_method_symbol == :get</tt>.
-    def get?
-      HTTP_METHOD_LOOKUP[request_method] == :get
-    end
-
-    # Is this a POST request?
-    # Equivalent to <tt>request.request_method_symbol == :post</tt>.
-    def post?
-      HTTP_METHOD_LOOKUP[request_method] == :post
-    end
-
-    # Is this a PATCH request?
-    # Equivalent to <tt>request.request_method == :patch</tt>.
-    def patch?
-      HTTP_METHOD_LOOKUP[request_method] == :patch
-    end
-
-    # Is this a PUT request?
-    # Equivalent to <tt>request.request_method_symbol == :put</tt>.
-    def put?
-      HTTP_METHOD_LOOKUP[request_method] == :put
-    end
-
-    # Is this a DELETE request?
-    # Equivalent to <tt>request.request_method_symbol == :delete</tt>.
-    def delete?
-      HTTP_METHOD_LOOKUP[request_method] == :delete
-    end
-
-    # Is this a HEAD request?
-    # Equivalent to <tt>request.request_method_symbol == :head</tt>.
-    def head?
-      HTTP_METHOD_LOOKUP[request_method] == :head
-    end
-
     # Provides access to the request's HTTP headers, for example:
     #
     #   request.headers["Content-Type"] # => "text/plain"
     def headers
-      Http::Headers.new(@env)
+      @headers ||= Http::Headers.new(@env)
     end
 
     # Returns a +String+ with the last requested path including their params.
@@ -237,11 +201,13 @@ module ActionDispatch
     end
     alias :xhr? :xml_http_request?
 
+    # Returns the IP address of client as a +String+.
     def ip
       @ip ||= super
     end
 
-    # Originating IP address, usually set by the RemoteIp middleware.
+    # Returns the IP address of client as a +String+,
+    # usually set by the RemoteIp middleware.
     def remote_ip
       @remote_ip ||= (@env["action_dispatch.remote_ip"] || ip).to_s
     end
@@ -258,13 +224,13 @@ module ActionDispatch
       env[ACTION_DISPATCH_REQUEST_ID]
     end
 
-    def request_id=(id)
+    def request_id=(id) # :nodoc:
       env[ACTION_DISPATCH_REQUEST_ID] = id
     end
 
     alias_method :uuid, :request_id
 
-    def x_request_id
+    def x_request_id # :nodoc:
       get_header HTTP_X_REQUEST_ID
     end
 
@@ -295,6 +261,8 @@ module ActionDispatch
       end
     end
 
+    # Returns true if the request's content MIME type is
+    # +application/x-www-form-urlencoded+ or +multipart/form-data+.
     def form_data?
       FORM_DATA_MEDIA_TYPES.include?(content_mime_type.to_s)
     end

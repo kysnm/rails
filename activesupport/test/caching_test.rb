@@ -288,8 +288,9 @@ module CacheStoreBehavior
     @cache.write('foo', 'bar', :expires_in => 10)
     @cache.write('fu', 'baz')
     @cache.write('fud', 'biz')
-    Time.stubs(:now).returns(time + 11)
-    assert_equal({"fu" => "baz"}, @cache.read_multi('foo', 'fu'))
+    Time.stub(:now, time + 11) do
+      assert_equal({"fu" => "baz"}, @cache.read_multi('foo', 'fu'))
+    end
   end
 
   def test_fetch_multi
@@ -387,66 +388,74 @@ module CacheStoreBehavior
 
   def test_expires_in
     time = Time.local(2008, 4, 24)
-    Time.stubs(:now).returns(time)
 
-    @cache.write('foo', 'bar')
-    assert_equal 'bar', @cache.read('foo')
+    Time.stub(:now, time) do
+      @cache.write('foo', 'bar')
+      assert_equal 'bar', @cache.read('foo')
+    end
 
-    Time.stubs(:now).returns(time + 30)
-    assert_equal 'bar', @cache.read('foo')
+    Time.stub(:now, time + 30) do
+      assert_equal 'bar', @cache.read('foo')
+    end
 
-    Time.stubs(:now).returns(time + 61)
-    assert_nil @cache.read('foo')
+    Time.stub(:now, time + 61) do
+      assert_nil @cache.read('foo')
+    end
   end
 
   def test_race_condition_protection_skipped_if_not_defined
     @cache.write('foo', 'bar')
     time = @cache.send(:read_entry, 'foo', {}).expires_at
-    Time.stubs(:now).returns(Time.at(time))
 
-    result = @cache.fetch('foo') do
-      assert_equal nil, @cache.read('foo')
-      'baz'
+    Time.stub(:now, Time.at(time)) do
+      result = @cache.fetch('foo') do
+        assert_equal nil, @cache.read('foo')
+        'baz'
+      end
+      assert_equal 'baz', result
     end
-    assert_equal 'baz', result
   end
 
   def test_race_condition_protection_is_limited
     time = Time.now
     @cache.write('foo', 'bar', :expires_in => 60)
-    Time.stubs(:now).returns(time + 71)
-    result = @cache.fetch('foo', :race_condition_ttl => 10) do
-      assert_equal nil, @cache.read('foo')
-      "baz"
+    Time.stub(:now, time + 71) do
+      result = @cache.fetch('foo', :race_condition_ttl => 10) do
+        assert_equal nil, @cache.read('foo')
+        "baz"
+      end
+      assert_equal "baz", result
     end
-    assert_equal "baz", result
   end
 
   def test_race_condition_protection_is_safe
     time = Time.now
     @cache.write('foo', 'bar', :expires_in => 60)
-    Time.stubs(:now).returns(time + 61)
-    begin
-      @cache.fetch('foo', :race_condition_ttl => 10) do
-        assert_equal 'bar', @cache.read('foo')
-        raise ArgumentError.new
+    Time.stub(:now, time + 61) do
+      begin
+        @cache.fetch('foo', :race_condition_ttl => 10) do
+          assert_equal 'bar', @cache.read('foo')
+          raise ArgumentError.new
+        end
+      rescue ArgumentError
       end
-    rescue ArgumentError
+      assert_equal "bar", @cache.read('foo')
     end
-    assert_equal "bar", @cache.read('foo')
-    Time.stubs(:now).returns(time + 91)
-    assert_nil @cache.read('foo')
+    Time.stub(:now, time + 91) do
+      assert_nil @cache.read('foo')
+    end
   end
 
   def test_race_condition_protection
     time = Time.now
     @cache.write('foo', 'bar', :expires_in => 60)
-    Time.stubs(:now).returns(time + 61)
-    result = @cache.fetch('foo', :race_condition_ttl => 10) do
-      assert_equal 'bar', @cache.read('foo')
-      "baz"
+    Time.stub(:now, time + 61) do
+      result = @cache.fetch('foo', :race_condition_ttl => 10) do
+        assert_equal 'bar', @cache.read('foo')
+        "baz"
+      end
+      assert_equal "baz", result
     end
-    assert_equal "baz", result
   end
 
   def test_crazy_key_characters
@@ -636,37 +645,37 @@ module AutoloadingCacheBehavior
   include DependenciesTestHelpers
   def test_simple_autoloading
     with_autoloading_fixtures do
-      @cache.write('foo', E.new)
+      @cache.write('foo', EM.new)
     end
 
-    remove_constants(:E)
+    remove_constants(:EM)
     ActiveSupport::Dependencies.clear
 
     with_autoloading_fixtures do
-      assert_kind_of E, @cache.read('foo')
+      assert_kind_of EM, @cache.read('foo')
     end
 
-    remove_constants(:E)
+    remove_constants(:EM)
     ActiveSupport::Dependencies.clear
   end
 
   def test_two_classes_autoloading
     with_autoloading_fixtures do
-      @cache.write('foo', [E.new, ClassFolder.new])
+      @cache.write('foo', [EM.new, ClassFolder.new])
     end
 
-    remove_constants(:E, :ClassFolder)
+    remove_constants(:EM, :ClassFolder)
     ActiveSupport::Dependencies.clear
 
     with_autoloading_fixtures do
       loaded = @cache.read('foo')
       assert_kind_of Array, loaded
       assert_equal 2, loaded.size
-      assert_kind_of E, loaded[0]
+      assert_kind_of EM, loaded[0]
       assert_kind_of ClassFolder, loaded[1]
     end
 
-    remove_constants(:E, :ClassFolder)
+    remove_constants(:EM, :ClassFolder)
     ActiveSupport::Dependencies.clear
   end
 end
@@ -775,11 +784,12 @@ class FileStoreTest < ActiveSupport::TestCase
     @cache.write('foo', 'bar', expires_in: 10)
     @cache.write('baz', 'qux')
     @cache.write('quux', 'corge', expires_in: 20)
-    Time.stubs(:now).returns(time + 15)
-    @cache.cleanup
-    assert_not @cache.exist?('foo')
-    assert @cache.exist?('baz')
-    assert @cache.exist?('quux')
+    Time.stub(:now, time + 15) do
+      @cache.cleanup
+      assert_not @cache.exist?('foo')
+      assert @cache.exist?('baz')
+      assert @cache.exist?('quux')
+    end
   end
 
   def test_write_with_unless_exist
@@ -1056,9 +1066,9 @@ class CacheEntryTest < ActiveSupport::TestCase
     assert !entry.expired?, 'entry not expired'
     entry = ActiveSupport::Cache::Entry.new("value", :expires_in => 60)
     assert !entry.expired?, 'entry not expired'
-    time = Time.now + 61
-    Time.stubs(:now).returns(time)
-    assert entry.expired?, 'entry is expired'
+    Time.stub(:now, Time.now + 61) do
+      assert entry.expired?, 'entry is expired'
+    end
   end
 
   def test_compress_values
