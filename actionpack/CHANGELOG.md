@@ -1,3 +1,7 @@
+*   Deprecate passing first parameter as `Hash` and default status code for `head` method.
+
+    *Mehmet Emin İNAÇ*
+
 *   Adds`Rack::Utils::ParameterTypeError` and `Rack::Utils::InvalidParameterError`
     to the rescue_responses hash in `ExceptionWrapper` (Rack recommends
     integrators serve 400s for both of these).
@@ -218,13 +222,13 @@
 
 *   Preserve default url options when generating URLs.
 
-    Fixes an issue that would cause default_url_options to be lost when
+    Fixes an issue that would cause `default_url_options` to be lost when
     generating URLs with fewer positional arguments than parameters in the
     route definition.
 
     *Tekin Suleyman*
 
-*   Deprecate *_via_redirect integration test methods.
+*   Deprecate `*_via_redirect` integration test methods.
 
     Use `follow_redirect!` manually after the request call for the same behavior.
 
@@ -247,11 +251,11 @@
 
     *Jonas Baumann*
 
-*   Deprecate all *_filter callbacks in favor of *_action callbacks.
+*   Deprecate all `*_filter` callbacks in favor of `*_action` callbacks.
 
     *Rafael Mendonça França*
 
-*   Allow you to pass `prepend: false` to protect_from_forgery to have the
+*   Allow you to pass `prepend: false` to `protect_from_forgery` to have the
     verification callback appended instead of prepended to the chain.
     This allows you to let the verification step depend on prior callbacks.
 

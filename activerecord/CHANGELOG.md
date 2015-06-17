@@ -1,3 +1,7 @@
+*   Make `remove_index :table, :column` reversible.
+
+    *Yves Senn*
+
 *   Fixed an error which would occur in dirty checking when calling
     `update_attributes` from a getter.
 
@@ -12,7 +16,7 @@
 
 *   Add `:enum_prefix`/`:enum_suffix` option to `enum` definition.
 
-    Fixes #17511 and #17415
+    Fixes #17511, #17415.
 
     *Igor Kapkov*
 
@@ -22,7 +26,7 @@
 
     *Sean Griffin & jmondo*
 
-*   Deprecate the PG `:point` type in favor of a new one which will return
+*   Deprecate the PostgreSQL `:point` type in favor of a new one which will return
     `Point` objects instead of an `Array`
 
     *Sean Griffin*
@@ -84,7 +88,8 @@
 
     *Jonathan Worek*
 
-*   Pass `:extend` option for `has_and_belongs_to_many` associations to the underlying `has_many :through`.
+*   Pass `:extend` option for `has_and_belongs_to_many` associations to the
+    underlying `has_many :through`.
 
     *Jaehyun Shin*
 
