@@ -83,8 +83,7 @@ module ActionDispatch
     # is called, this class will calculate the value and then memoize it.
     class GetIp
       def initialize(req, check_ip, proxies)
-        @env      = req
-        @env      = env
+        @req      = req
         @check_ip = check_ip
         @proxies  = proxies
       end
@@ -124,8 +123,8 @@ module ActionDispatch
         if should_check_ip && !forwarded_ips.include?(client_ips.last)
           # We don't know which came from the proxy, and which from the user
           raise IpSpoofAttackError, "IP spoofing attack?! " +
-            "HTTP_CLIENT_IP=#{@env['HTTP_CLIENT_IP'].inspect} " +
-            "HTTP_X_FORWARDED_FOR=#{@env['HTTP_X_FORWARDED_FOR'].inspect}"
+            "HTTP_CLIENT_IP=#{@req.get_header('HTTP_CLIENT_IP').inspect} " +
+            "HTTP_X_FORWARDED_FOR=#{@req.get_header('HTTP_X_FORWARDED_FOR').inspect}"
         end
 
         # We assume these things about the IP headers:
@@ -149,7 +148,7 @@ module ActionDispatch
 
       def ips_from(header)
         # Split the comma-separated list into an array of strings
-        ips = @env.get_header(header) ? @env.get_header(header).strip.split(/[,\s]+/) : []
+        ips = @req.get_header(header) ? @req.get_header(header).strip.split(/[,\s]+/) : []
         ips.select do |ip|
           begin
             # Only return IPs that are valid according to the IPAddr#new method

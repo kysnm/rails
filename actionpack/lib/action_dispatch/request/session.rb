@@ -17,7 +17,7 @@ module ActionDispatch
         session.merge! session_was if session_was
 
         set(req, session)
-        Options.set(env, Request::Session::Options.new(store, default_options))
+        Options.set(req, Request::Session::Options.new(store, default_options))
         session
       end
 
@@ -47,9 +47,9 @@ module ActionDispatch
           @delegate[key]
         end
 
-        def id(env)
+        def id(req)
           @delegate.fetch(:id) {
-            @by.send(:extract_session_id, env)
+            @by.send(:extract_session_id, req)
           }
         end
 
@@ -60,24 +60,24 @@ module ActionDispatch
 
       def initialize(by, req)
         @by       = by
-        @env      = req
+        @req      = req
         @delegate = {}
         @loaded   = false
         @exists   = nil # we haven't checked yet
       end
 
       def id
-        options.id(@env)
+        options.id(@req)
       end
 
       def options
-        Options.find @env
+        Options.find @req
       end
 
       def destroy
         clear
         options = self.options || {}
-        @by.send(:destroy_session, @env, options.id(@env), options)
+        @by.send(:destroy_session, @req, options.id(@req), options)
 
         # Load the new sid to be written with the response
         @loaded = false
@@ -181,7 +181,7 @@ module ActionDispatch
 
       def exists?
         return @exists unless @exists.nil?
-        @exists = @by.send(:session_exists?, @env)
+        @exists = @by.send(:session_exists?, @req)
       end
 
       def loaded?
@@ -209,7 +209,7 @@ module ActionDispatch
       end
 
       def load!
-        id, session = @by.load_session @env
+        id, session = @by.load_session @req
         options[:id] = id
         @delegate.replace(stringify_keys(session))
         @loaded = true

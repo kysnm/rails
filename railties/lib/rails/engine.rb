@@ -518,7 +518,7 @@ module Rails
 
     # Define the Rack API for this engine.
     def call(req, res)
-      app.call(ActionDispatch::EngineRequest.new(req, routes), res)
+      app.call(ActionDispatch::EngineRequest.new(env_config, req, routes), res)
     end
 
     # Defines additional Rack env configuration that is added on each call.

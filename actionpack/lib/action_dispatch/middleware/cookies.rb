@@ -4,14 +4,10 @@ require 'active_support/core_ext/object/blank'
 require 'active_support/key_generator'
 require 'active_support/message_verifier'
 require 'active_support/json'
+      require 'objspace'
+      include ObjectSpace
 
 module ActionDispatch
-  class Request
-    def cookie_jar
-      @cookie_jar ||= Cookies::CookieJar.build(self)
-    end
-  end
-
   # \Cookies are read and written through ActionController#cookies.
   #
   # The cookies being read are the ones received along with the request, the cookies
@@ -106,6 +102,11 @@ module ActionDispatch
 
     # Include in a cookie jar to allow chaining, e.g. cookies.permanent.signed
     module ChainedCookieJars
+      def initialize
+        super()
+        raise unless @key_generator
+      end
+
       # Returns a jar that'll automatically set the assigned cookies to have an expiration date 20 years from now. Example:
       #
       #   cookies.permanent[:prefers_open_id] = true
@@ -216,22 +217,23 @@ module ActionDispatch
       # $& => example.local
       DOMAIN_REGEXP = /[^.]*\.([^.]*|..\...|...\...)$/
 
-      def self.options_for_env(env) #:nodoc:
-        { signed_cookie_salt: env[SIGNED_COOKIE_SALT] || '',
-          encrypted_cookie_salt: env[ENCRYPTED_COOKIE_SALT] || '',
-          encrypted_signed_cookie_salt: env[ENCRYPTED_SIGNED_COOKIE_SALT] || '',
-          secret_token: env[SECRET_TOKEN],
-          secret_key_base: env[SECRET_KEY_BASE],
-          upgrade_legacy_signed_cookies: env[SECRET_TOKEN].present? && env[SECRET_KEY_BASE].present?,
-          serializer: env[COOKIES_SERIALIZER],
-          digest: env[COOKIES_DIGEST]
+      def self.options_for_env(req) #:nodoc:
+        { signed_cookie_salt:            req.get_header(SIGNED_COOKIE_SALT) || '',
+          encrypted_cookie_salt:         req.get_header(ENCRYPTED_COOKIE_SALT) || '',
+          encrypted_signed_cookie_salt:  req.get_header(ENCRYPTED_SIGNED_COOKIE_SALT) || '',
+          secret_token:                  req.get_header(SECRET_TOKEN),
+          secret_key_base:               req.get_header(SECRET_KEY_BASE),
+          upgrade_legacy_signed_cookies: req.get_header(SECRET_TOKEN).present? && req.get_header(SECRET_KEY_BASE).present?,
+          serializer:                    req.get_header(COOKIES_SERIALIZER),
+          digest:                        req.get_header(COOKIES_DIGEST)
         }
       end
 
+      ObjectSpace.trace_object_allocations_start
+
       def self.build(request)
-        env = request.env
-        key_generator = env[GENERATOR_KEY]
-        options = options_for_env env
+        key_generator = request.get_header GENERATOR_KEY
+        options = options_for_env request
 
         host = request.host
         secure = request.ssl?
@@ -250,6 +252,7 @@ module ActionDispatch
         @options = options
         @cookies = {}
         @committed = false
+        super()
       end
 
       def committed?; @committed; end
@@ -377,6 +380,7 @@ module ActionDispatch
         @parent_jar = parent_jar
         @key_generator = key_generator
         @options = options
+        super()
       end
 
       def [](name)
@@ -455,6 +459,7 @@ module ActionDispatch
         @options = options
         secret = key_generator.generate_key(@options[:signed_cookie_salt])
         @verifier = ActiveSupport::MessageVerifier.new(secret, digest: digest, serializer: ActiveSupport::MessageEncryptor::NullSerializer)
+        super()
       end
 
       # Returns the value of the cookie by +name+ if it is untampered,
@@ -513,9 +518,11 @@ module ActionDispatch
 
         @parent_jar = parent_jar
         @options = options
+        @key_generator = key_generator
         secret = key_generator.generate_key(@options[:encrypted_cookie_salt])
         sign_secret = key_generator.generate_key(@options[:encrypted_signed_cookie_salt])
         @encryptor = ActiveSupport::MessageEncryptor.new(secret, sign_secret, digest: digest, serializer: ActiveSupport::MessageEncryptor::NullSerializer)
+        super()
       end
 
       # Returns the value of the cookie by +name+ if it is untampered,

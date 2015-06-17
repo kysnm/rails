@@ -102,6 +102,10 @@ module Rails
       def wrap_request(req)
         ActionDispatch::AppRequest.new(req)
       end
+
+      def wrap_response(res, req)
+        ActionDispatch::Response.new(res, req)
+      end
     end
 
     def create_container(event_handlers, app)

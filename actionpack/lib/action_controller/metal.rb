@@ -189,13 +189,14 @@ module ActionController
       response_body || (response && response.committed?)
     end
 
-    def dispatch(name, request) #:nodoc:
-      set_request!(request)
+    def dispatch(name, request, response) #:nodoc:
+      set_request!(request, response)
       process(name)
-      to_a
+      response_body.each { |x| response.write x }
+      response.finish
     end
 
-    def set_request!(request) #:nodoc:
+    def set_request!(request, response) #:nodoc:
       @_request = request
       request.set_header 'action_controller.instance', self
     end
@@ -237,7 +238,7 @@ module ActionController
       end
 
       def call(req, res)
-        @app.dispatch @name, req
+        @app.dispatch @name, req, res
       end
     end
 

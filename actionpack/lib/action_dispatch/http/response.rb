@@ -31,22 +31,11 @@ module ActionDispatch # :nodoc:
   #      puts response.body
   #    end
   #  end
-  class Response
+  class Response < SimpleDelegator
     # The request that the response is responding to.
     attr_accessor :request
 
-    # The HTTP status code.
-    attr_reader :status
-
     attr_writer :sending_file
-
-    # Get headers for this response.
-    attr_reader :header
-
-    alias_method :headers,  :header
-
-    delegate :[], :[]=, :to => :@header
-    delegate :each, :to => :@stream
 
     # Sets the HTTP response's content MIME type. For example, in the controller
     # you could write this:
@@ -112,13 +101,14 @@ module ActionDispatch # :nodoc:
     # The underlying body, as a streamable object.
     attr_reader :stream
 
-    def initialize(status = 200, header = {}, body = [], default_headers: self.class.default_headers)
-      super()
+    #def initialize(status = 200, header = {}, body = [], default_headers: self.class.default_headers)
+    def initialize(response, request, default_headers: self.class.default_headers)
+      super(response)
 
-      header = merge_default_headers(header, default_headers)
-      @header = header
+      response.status = 200
+      @request = request
 
-      self.body, self.status = body, status
+      header = merge_default_headers(response, default_headers)
 
       @sending_file = false
       @blank        = false
@@ -320,8 +310,12 @@ module ActionDispatch # :nodoc:
     def before_sending
     end
 
-    def merge_default_headers(original, default)
-      default.respond_to?(:merge) ? default.merge(original) : original
+    def merge_default_headers(response, default)
+      default.each_pair do |k,v|
+        unless response.has_header? k
+          response[k] = v
+        end
+      end
     end
 
     def build_buffer(response, body)

@@ -147,7 +147,7 @@ module ActionDispatch
     #
     #   request.headers["Content-Type"] # => "text/plain"
     def headers
-      @headers ||= Http::Headers.new(@env)
+      @headers ||= Http::Headers.new(self)
     end
 
     # Returns a +String+ with the last requested path including their params.
@@ -339,14 +339,32 @@ module ActionDispatch
   class EngineRequest < SimpleDelegator
     attr_reader :routes
 
-    def initialize req, routes
+    def initialize env_config, req, routes
       super(req)
-      @routes = routes
+
+      @env_config = env_config
+      @routes     = routes
+      @cookie_jar = nil
+
       if req.script_name
         @engine_script_name = req.script_name.dup
       else
         @engine_script_name = nil
       end
+    end
+
+    def cookie_jar
+      @cookie_jar ||= Cookies::CookieJar.build(self)
+    end
+
+    def get_header(name)
+      super(name) {
+        if block_given?
+          @env_config.fetch(name) { |x| yield x }
+        else
+          @env_config[name]
+        end
+      }
     end
 
     def engine_script_name(_routes)

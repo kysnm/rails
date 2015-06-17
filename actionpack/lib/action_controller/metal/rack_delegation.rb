@@ -14,9 +14,9 @@ module ActionController
       end
     end
 
-    def set_request!(request) #:nodoc:
+    def set_request!(request, response) #:nodoc:
       super
-      set_response!(request)
+      set_response!(request, response)
     end
 
     def response_body=(body)
@@ -30,9 +30,8 @@ module ActionController
 
     private
 
-    def set_response!(request)
-      @_response         = ActionDispatch::Response.new
-      @_response.request = request
+    def set_response!(request, response)
+      @_response = response
     end
   end
 end
