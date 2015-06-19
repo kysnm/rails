@@ -577,12 +577,9 @@ module ActionDispatch
     def call(req, res)
       @app.call(req, res)
 
-      if cookie_jar = req.get_header('action_dispatch.cookies')
+      if cookie_jar = req.cookie_jar
         unless cookie_jar.committed?
-          cookie_jar.write(headers)
-          if headers[HTTP_HEADER].respond_to?(:join)
-            headers[HTTP_HEADER] = headers[HTTP_HEADER].join("\n")
-          end
+          cookie_jar.write(res)
         end
       end
     end
