@@ -60,8 +60,7 @@ module ActionDispatch
       new(nil).cleanup!
     end
 
-    def initialize(app, condition=nil)
-      @app = app
+    def initialize(condition=nil)
       @condition = condition || lambda { true }
       @validated = true
     end
