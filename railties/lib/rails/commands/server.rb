@@ -78,24 +78,11 @@ module Rails
 
     def middleware
       middlewares = []
-      middlewares << [::Rack::ContentLength]
-
-
       Hash.new(middlewares)
     end
 
     def event_handlers
-      events = super + app.config.middleware.events
-
-      # FIXME: add Rack::Lock in the case people are using webrick.
-      # This is to remain backwards compatible for those who are
-      # running webrick in production. We should consider removing this
-      # in development.
-      if server.name == 'Rack::Handler::WEBrick'
-        events + [::Rack::Lock.new]
-      else
-        events
-      end
+      super + app.config.middleware.events
     end
 
     class Container < ::Rack::Server::Container
@@ -118,8 +105,7 @@ module Rails
         DoNotReverseLookup: true,
         environment:        (ENV['RAILS_ENV'] || ENV['RACK_ENV'] || "development").dup,
         daemonize:          false,
-        pid:                File.expand_path("tmp/pids/server.pid"),
-        config:             File.expand_path("config.ru")
+        pid:                File.expand_path("tmp/pids/server.pid")
       })
     end
 

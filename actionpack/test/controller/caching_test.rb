@@ -22,8 +22,6 @@ class FragmentCachingMetalTest < ActionController::TestCase
     @controller.perform_caching = true
     @controller.cache_store = @store
     @params = { controller: 'posts', action: 'index' }
-    @request = ActionController::TestRequest.new
-    @response = ActionController::TestResponse.new
     @controller.params = @params
     @controller.request = @request
     @controller.response = @response
@@ -52,8 +50,6 @@ class FragmentCachingTest < ActionController::TestCase
     @controller.perform_caching = true
     @controller.cache_store = @store
     @params = {:controller => 'posts', :action => 'index'}
-    @request = ActionController::TestRequest.new
-    @response = ActionController::TestResponse.new
     @controller.params = @params
     @controller.request = @request
     @controller.response = @response
@@ -166,6 +162,8 @@ class FunctionalCachingController < CachingController
   end
 
   def formatted_fragment_cached_with_variant
+    request.variant = :phone if params[:v] == "phone"
+
     respond_to do |format|
       format.html.phone
       format.html
@@ -183,8 +181,6 @@ class FunctionalFragmentCachingTest < ActionController::TestCase
     @controller = FunctionalCachingController.new
     @controller.perform_caching = true
     @controller.cache_store = @store
-    @request = ActionController::TestRequest.new
-    @response = ActionController::TestResponse.new
   end
 
   def test_fragment_caching
@@ -268,9 +264,7 @@ CACHED
 
 
   def test_fragment_caching_with_variant
-    @request.variant = :phone
-
-    get :formatted_fragment_cached_with_variant, format: "html"
+    get :formatted_fragment_cached_with_variant, format: "html", params: { v: :phone }
     assert_response :success
     expected_body = "<body>\n<p>PHONE</p>\n</body>\n"
 
@@ -381,6 +375,7 @@ class AutomaticCollectionCacheTest < ActionController::TestCase
     @controller.perform_caching = true
     @controller.partial_rendered_times = 0
     @controller.cache_store = ActiveSupport::Cache::MemoryStore.new
+    ActionView::PartialRenderer.collection_cache = @controller.cache_store
   end
 
   def test_collection_fetches_cached_views

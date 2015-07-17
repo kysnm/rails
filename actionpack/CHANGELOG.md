@@ -1,3 +1,32 @@
+*   `ActionController::Parameters` no longer inherits from
+    `HashWithIndifferentAccess`
+
+    Inheriting from `HashWithIndifferentAccess` allowed users to call any
+    enumerable methods on `Parameters` object, resulting in a risk of losing the
+    `permitted?` status or even getting back a pure `Hash` object instead of
+    a `Parameters` object with proper sanitization.
+
+    By not inheriting from `HashWithIndifferentAccess`, we are able to make
+    sure that all methods that are defined in `Parameters` object will return
+    a proper `Parameters` object with a correct `permitted?` flag.
+
+    *Prem Sichanugrist*
+
+*   Replaced `ActiveSupport::Concurrency::Latch` with `Concurrent::CountDownLatch`
+    from the concurrent-ruby gem.
+
+    *Jerry D'Antonio*
+
+*   Add ability to filter parameters based on parent keys.
+
+        # matches {credit_card: {code: "xxxx"}}
+        # doesn't match {file: { code: "xxxx"}}
+        config.filter_parameters += [ "credit_card.code" ]
+
+    See #13897.
+
+    *Guillaume Malette*
+
 *   Deprecate passing first parameter as `Hash` and default status code for `head` method.
 
     *Mehmet Emin İNAÇ*
@@ -154,7 +183,8 @@
     *arthurnn*
 
 *   `ActionController#translate` supports symbols as shortcuts.
-    When shortcut is given it also lookups without action name.
+    When a shortcut is given it also performs the lookup without the action
+    name.
 
     *Max Melentiev*
 

@@ -165,7 +165,7 @@ module ActionDispatch
 
       # ROUTES TODO: These assertions should really work in an integration context
       def method_missing(selector, *args, &block)
-        if defined?(@controller) && @controller && @routes && @routes.named_routes.route_defined?(selector)
+        if defined?(@controller) && @controller && defined?(@routes) && @routes && @routes.named_routes.route_defined?(selector)
           @controller.send(selector, *args, &block)
         else
           super
@@ -183,7 +183,7 @@ module ActionDispatch
           end
 
           # Assume given controller
-          request = ActionController::TestRequest.new
+          request = ActionController::TestRequest.create
 
           if path =~ %r{://}
             fail_on(URI::InvalidURIError, msg) do

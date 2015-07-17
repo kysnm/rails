@@ -1,3 +1,21 @@
+*   Fix `NoMethodError` when generating a scaffold inside a full engine.
+
+    *Yuji Yaginuma*
+
+*   Adding support for passing a block to the `add_source` action of a custom generator
+
+    *Mike Dalton*, *Hirofumi Wakasugi*
+
+*   `assert_file` understands paths with special characters
+    (eg. `v0.1.4~alpha+nightly`).
+
+    *Diego Carrion*
+
+*   Remove ContentLength middleware from the defaults.  If you want it, just
+    add it as a middleware in your config.
+
+    *Egg McMuffin*
+
 *   Make it possible to customize the executable inside rerun snippets.
 
     *Yves Senn*

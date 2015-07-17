@@ -23,7 +23,8 @@ application from scratch. It does not assume that you have any prior experience
 with Rails. However, to get the most out of it, you need to have some
 prerequisites installed:
 
-* The [Ruby](https://www.ruby-lang.org/en/downloads) language version 2.2.2 or newer.
+* The [Ruby](https://www.ruby-lang.org/en/downloads) language version 2.2.2 or newer. 
+* Right version of [Development Kit](http://rubyinstaller.org/downloads/), if you are using Windows
 * The [RubyGems](https://rubygems.org) packaging system, which is installed with Ruby
   versions 1.9 and later. To learn more about RubyGems, please read the [RubyGems Guides](http://guides.rubygems.org).
 * A working installation of the [SQLite3 Database](https://www.sqlite.org).
@@ -298,6 +299,7 @@ Rails.application.routes.draw do
 
   # The priority is based upon order of creation:
   # first created -> highest priority.
+  # See how all your routes lay out with "rake routes".
   #
   # You can have the root of your site routed with "root"
   # root 'welcome#index'
@@ -619,7 +621,7 @@ def create
 end
 ```
 
-The `render` method here is taking a very simple hash with a key of `plain` and
+The `render` method here is taking a very simple hash with a key of `:plain` and
 value of `params[:article].inspect`. The `params` method is the object which
 represents the parameters (or fields) coming in from the form. The `params`
 method returns an `ActiveSupport::HashWithIndifferentAccess` object, which
@@ -1545,20 +1547,17 @@ class CreateComments < ActiveRecord::Migration
     create_table :comments do |t|
       t.string :commenter
       t.text :body
-
-      # this line adds an integer column called `article_id`.
-      t.references :article, index: true
+      t.references :article, index: true, foreign_key: true
 
       t.timestamps null: false
     end
-    add_foreign_key :comments, :articles
   end
 end
 ```
 
-The `t.references` line sets up a foreign key column for the association between
-the two models. An index for this association is also created on this column.
-Go ahead and run the migration:
+The `t.references` line creates an integer column called `article_id`, an index
+for it, and a foreign key constraint that points to the `id` column of the `articles`
+table. Go ahead and run the migration:
 
 ```bash
 $ bin/rake db:migrate
@@ -1571,8 +1570,6 @@ run against the current database, so in this case you will just see:
 ==  CreateComments: migrating =================================================
 -- create_table(:comments)
    -> 0.0115s
--- add_foreign_key(:comments, :articles)
-   -> 0.0000s
 ==  CreateComments: migrated (0.0119s) ========================================
 ```
 

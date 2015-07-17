@@ -45,11 +45,11 @@ class TestCaseTest < ActionController::TestCase
     end
 
     def test_params
-      render text: params.inspect
+      render text: ::JSON.dump(params.to_unsafe_h)
     end
 
     def test_query_parameters
-      render text: request.query_parameters.inspect
+      render text: ::JSON.dump(request.query_parameters)
     end
 
     def test_request_parameters
@@ -158,8 +158,6 @@ XML
   def setup
     super
     @controller = TestController.new
-    @request    = ActionController::TestRequest.new
-    @response   = ActionController::TestResponse.new
     @request.env['PATH_INFO'] = nil
     @routes = ActionDispatch::Routing::RouteSet.new.tap do |r|
       r.draw do
@@ -229,7 +227,7 @@ XML
 
   def test_document_body_and_params_with_post
     post :test_params, params: { id: 1 }
-    assert_equal(%({"id"=>"1", "controller"=>"test_case_test/test", "action"=>"test_params"}), @response.body)
+    assert_equal({"id"=>"1", "controller"=>"test_case_test/test", "action"=>"test_params"}, ::JSON.parse(@response.body))
   end
 
   def test_document_body_with_post
@@ -485,7 +483,7 @@ XML
     assert_deprecated {
       get :test_params, page: { name: "Page name", month: '4', year: '2004', day: '6' }
     }
-    parsed_params = eval(@response.body)
+    parsed_params = ::JSON.parse(@response.body)
     assert_equal(
       {
         'controller' => 'test_case_test/test', 'action' => 'test_params',
@@ -504,7 +502,7 @@ XML
         day: '6'
       }
     }
-    parsed_params = eval(@response.body)
+    parsed_params = ::JSON.parse(@response.body)
     assert_equal(
       {
         'controller' => 'test_case_test/test', 'action' => 'test_params',
@@ -516,8 +514,8 @@ XML
 
   def test_query_param_named_action
     get :test_query_parameters, params: {action: 'foobar'}
-    parsed_params = eval(@response.body)
-    assert_equal({action: 'foobar'}, parsed_params)
+    parsed_params = JSON.parse(@response.body)
+    assert_equal({'action' => 'foobar'}, parsed_params)
   end
 
   def test_request_param_named_action
@@ -536,7 +534,7 @@ XML
       }
     }, session: { 'foo' => 'bar' }, flash: { notice: 'created' }
 
-    parsed_params = eval(@response.body)
+    parsed_params = ::JSON.parse(@response.body)
     assert_equal(
       {'controller' => 'test_case_test/test', 'action' => 'test_params',
        'page' => {'name' => "Page name", 'month' => '4', 'year' => '2004', 'day' => '6'}},
@@ -551,7 +549,7 @@ XML
     get :test_params, params: {
       page: { name: "Page name", month: 4, year: 2004, day: 6 }
     }
-    parsed_params = eval(@response.body)
+    parsed_params = ::JSON.parse(@response.body)
     assert_equal(
       {'controller' => 'test_case_test/test', 'action' => 'test_params',
        'page' => {'name' => "Page name", 'month' => '4', 'year' => '2004', 'day' => '6'}},
@@ -561,17 +559,17 @@ XML
 
   def test_params_passing_with_fixnums_when_not_html_request
     get :test_params, params: { format: 'json', count: 999 }
-    parsed_params = eval(@response.body)
+    parsed_params = ::JSON.parse(@response.body)
     assert_equal(
       {'controller' => 'test_case_test/test', 'action' => 'test_params',
-       'format' => 'json', 'count' => 999 },
+       'format' => 'json', 'count' => '999' },
       parsed_params
     )
   end
 
   def test_params_passing_path_parameter_is_string_when_not_html_request
     get :test_params, params: { format: 'json', id: 1 }
-    parsed_params = eval(@response.body)
+    parsed_params = ::JSON.parse(@response.body)
     assert_equal(
       {'controller' => 'test_case_test/test', 'action' => 'test_params',
        'format' => 'json', 'id' => '1' },
@@ -581,7 +579,7 @@ XML
 
   def test_deprecated_params_passing_path_parameter_is_string_when_not_html_request
     assert_deprecated { get :test_params, format: 'json', id: 1 }
-    parsed_params = eval(@response.body)
+    parsed_params = ::JSON.parse(@response.body)
     assert_equal(
       {'controller' => 'test_case_test/test', 'action' => 'test_params',
        'format' => 'json', 'id' => '1' },
@@ -595,7 +593,7 @@ XML
         frozen: 'icy'.freeze, frozens: ['icy'.freeze].freeze, deepfreeze: { frozen: 'icy'.freeze }.freeze
       }
     end
-    parsed_params = eval(@response.body)
+    parsed_params = ::JSON.parse(@response.body)
     assert_equal(
       {'controller' => 'test_case_test/test', 'action' => 'test_params',
        'frozen' => 'icy', 'frozens' => ['icy'], 'deepfreeze' => { 'frozen' => 'icy' }},
@@ -693,13 +691,13 @@ XML
   def test_deprecated_xhr_with_params
     assert_deprecated { xhr :get, :test_params, params: { id: 1 } }
 
-    assert_equal(%({"id"=>"1", "controller"=>"test_case_test/test", "action"=>"test_params"}), @response.body)
+    assert_equal({"id"=>"1", "controller"=>"test_case_test/test", "action"=>"test_params"}, ::JSON.parse(@response.body))
   end
 
   def test_xhr_with_params
     get :test_params, params: { id: 1 }, xhr: true
 
-    assert_equal(%({"id"=>"1", "controller"=>"test_case_test/test", "action"=>"test_params"}), @response.body)
+    assert_equal({"id"=>"1", "controller"=>"test_case_test/test", "action"=>"test_params"}, ::JSON.parse(@response.body))
   end
 
   def test_xhr_with_session
@@ -718,12 +716,6 @@ XML
     assert_equal 'A wonder', session[:string], "Test session hash should allow indifferent access"
     assert_equal 'it works', session['symbol'], "Test session hash should allow indifferent access"
     assert_equal 'it works', session[:symbol], "Test session hash should allow indifferent access"
-  end
-
-  def test_header_properly_reset_after_get_request
-    get :test_params
-    @request.recycle!
-    assert_nil @request.instance_variable_get("@request_method")
   end
 
   def test_deprecated_params_reset_between_post_requests
@@ -916,7 +908,7 @@ XML
     filename = 'mona_lisa.jpg'
     path = "#{FILES_DIR}/#{filename}"
     assert_deprecated {
-      post :test_file_upload, file: ActionDispatch::Http::UploadedFile.new(filename: path, type: "image/jpg", tempfile: File.open(path))
+      post :test_file_upload, file: Rack::Test::UploadedFile.new(path, "image/jpg", true)
     }
     assert_equal '159528', @response.body
   end
@@ -925,7 +917,7 @@ XML
     filename = 'mona_lisa.jpg'
     path = "#{FILES_DIR}/#{filename}"
     post :test_file_upload, params: {
-      file: ActionDispatch::Http::UploadedFile.new(filename: path, type: "image/jpg", tempfile: File.open(path))
+      file: Rack::Test::UploadedFile.new(path, "image/jpg", true)
     }
     assert_equal '159528', @response.body
   end
@@ -957,10 +949,11 @@ class ResponseDefaultHeadersTest < ActionController::TestCase
     end
   end
 
-  setup do
+  def before_setup
     @original = ActionDispatch::Response.default_headers
     @defaults = { 'A' => '1', 'B' => '2' }
     ActionDispatch::Response.default_headers = @defaults
+    super
   end
 
   teardown do
@@ -970,8 +963,6 @@ class ResponseDefaultHeadersTest < ActionController::TestCase
   def setup
     super
     @controller = TestController.new
-    @request    = ActionController::TestRequest.new
-    @response   = ActionController::TestResponse.new
     @request.env['PATH_INFO'] = nil
     @routes = ActionDispatch::Routing::RouteSet.new.tap do |r|
       r.draw do

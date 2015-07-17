@@ -88,7 +88,7 @@ module AbstractController
       # Returns the full controller name, underscored, without the ending Controller.
       #
       #   class MyApp::MyPostsController < AbstractController::Base
-      #     end
+      #
       #   end
       #
       #   MyApp::MyPostsController.controller_path # => "my_app/my_posts"
@@ -148,9 +148,6 @@ module AbstractController
     #
     # ==== Parameters
     # * <tt>action_name</tt> - The name of an action to be tested
-    #
-    # ==== Returns
-    # * <tt>TrueClass</tt>, <tt>FalseClass</tt>
     def available_action?(action_name)
       _find_action_name(action_name).present?
     end
@@ -170,9 +167,6 @@ module AbstractController
       #
       # ==== Parameters
       # * <tt>name</tt> - The name of an action to be tested
-      #
-      # ==== Returns
-      # * <tt>TrueClass</tt>, <tt>FalseClass</tt>
       #
       # :api: private
       def action_method?(name)

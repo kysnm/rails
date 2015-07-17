@@ -28,7 +28,7 @@ NOTE: Bugs in the most recent released version of Ruby on Rails are likely to ge
 
 If you've found a problem in Ruby on Rails which is not a security risk, do a search on GitHub under [Issues](https://github.com/rails/rails/issues) in case it has already been reported. If you are unable to find any open GitHub issues addressing the problem you found, your next step will be to [open a new one](https://github.com/rails/rails/issues/new). (See the next section for reporting security issues.)
 
-Your issue report should contain a title and a clear description of the issue at the bare minimum. You should include as much relevant information as possible and should at least post a code sample that demonstrates the issue. It would be even better if you could include a unit test that shows how the expected behavior is not occurring. Your goal should be to make it easy for yourself - and others - to replicate the bug and figure out a fix.
+Your issue report should contain a title and a clear description of the issue at the bare minimum. You should include as much relevant information as possible and should at least post a code sample that demonstrates the issue. It would be even better if you could include a unit test that shows how the expected behavior is not occurring. Your goal should be to make it easy for yourself - and others - to reproduce the bug and figure out a fix.
 
 Then, don't get your hopes up! Unless you have a "Code Red, Mission Critical, the World is Coming to an End" kind of bug, you're creating this issue report in the hope that others with the same problem will be able to collaborate with you on solving it. Do not expect that the issue report will automatically see any activity or that others will jump to fix it. Creating an issue like this is mostly to help yourself start on the path of fixing the problem and for others to confirm it with an "I'm having this problem too" comment.
 
@@ -61,7 +61,7 @@ can expect it to be marked "invalid" as soon as it's reviewed.
 
 Sometimes, the line between 'bug' and 'feature' is a hard one to draw.
 Generally, a feature is anything that adds new behavior, while a bug is
-anything that fixes already existing behavior that is misbehaving. Sometimes,
+anything that causes incorrect behavior. Sometimes,
 the core team will have to make a judgement call. That said, the distinction
 generally just affects which release your patch will get in to; we love feature
 submissions! They just won't get backported to maintenance branches.
@@ -295,7 +295,7 @@ You can run a single test through ruby. For instance:
 
 ```bash
 $ cd actionmailer
-$ ruby -w -Itest test/mail_layout_test.rb -n test_explicit_class_layout
+$ bundle exec ruby -w -Itest test/mail_layout_test.rb -n test_explicit_class_layout
 ```
 
 The `-n` option allows you to run a single method instead of the whole
@@ -334,7 +334,7 @@ will now run the four of them in turn.
 You can also run any single test separately:
 
 ```bash
-$ ARCONN=sqlite3 ruby -Itest test/cases/associations/has_many_associations_test.rb
+$ ARCONN=sqlite3 bundle exec ruby -Itest test/cases/associations/has_many_associations_test.rb
 ```
 
 To run a single test against all adapters, use:

@@ -19,6 +19,8 @@ require 'models/invoice'
 require 'models/line_item'
 require 'models/column'
 require 'models/record'
+require 'models/admin'
+require 'models/admin/user'
 
 class BelongsToAssociationsTest < ActiveRecord::TestCase
   fixtures :accounts, :companies, :developers, :projects, :topics,
@@ -151,6 +153,30 @@ class BelongsToAssociationsTest < ActiveRecord::TestCase
     assert_raise(ActiveRecord::AssociationTypeMismatch) { Account.find(1).firm = Project.find(1) }
   end
 
+  def test_raises_type_mismatch_with_namespaced_class
+    assert_nil defined?(Region), "This test requires that there is no top-level Region class"
+
+    ActiveRecord::Base.connection.instance_eval do
+      create_table(:admin_regions) { |t| t.string :name }
+      add_column :admin_users, :region_id, :integer
+    end
+    Admin.const_set "RegionalUser", Class.new(Admin::User) { belongs_to(:region) }
+    Admin.const_set "Region", Class.new(ActiveRecord::Base)
+
+    e = assert_raise(ActiveRecord::AssociationTypeMismatch) {
+      Admin::RegionalUser.new(region: 'wrong value')
+    }
+    assert_match(/^Region\([^)]+\) expected, got String\([^)]+\)$/, e.message)
+  ensure
+    Admin.send :remove_const, "Region" if Admin.const_defined?("Region")
+    Admin.send :remove_const, "RegionalUser" if Admin.const_defined?("RegionalUser")
+
+    ActiveRecord::Base.connection.instance_eval do
+      remove_column :admin_users, :region_id if column_exists?(:admin_users, :region_id)
+      drop_table :admin_regions, if_exists: true
+    end
+  end
+
   def test_natural_assignment
     apple = Firm.create("name" => "Apple")
     citibank = Account.create("credit_limit" => 10)
@@ -267,7 +293,8 @@ class BelongsToAssociationsTest < ActiveRecord::TestCase
     client = Client.find(3)
     client.firm = nil
     client.save
-    assert_nil client.firm(true)
+    client.association(:firm).reload
+    assert_nil client.firm
     assert_nil client.client_of
   end
 
@@ -275,7 +302,8 @@ class BelongsToAssociationsTest < ActiveRecord::TestCase
     client = Client.create(:name => "Primary key client", :firm_name => companies(:first_firm).name)
     client.firm_with_primary_key = nil
     client.save
-    assert_nil client.firm_with_primary_key(true)
+    client.association(:firm_with_primary_key).reload
+    assert_nil client.firm_with_primary_key
     assert_nil client.client_of
   end
 
@@ -292,9 +320,13 @@ class BelongsToAssociationsTest < ActiveRecord::TestCase
   def test_polymorphic_association_class
     sponsor = Sponsor.new
     assert_nil sponsor.association(:sponsorable).send(:klass)
+    sponsor.association(:sponsorable).reload
+    assert_nil sponsor.sponsorable
 
     sponsor.sponsorable_type = '' # the column doesn't have to be declared NOT NULL
     assert_nil sponsor.association(:sponsorable).send(:klass)
+    sponsor.association(:sponsorable).reload
+    assert_nil sponsor.sponsorable
 
     sponsor.sponsorable = Member.new :name => "Bert"
     assert_equal Member, sponsor.association(:sponsorable).send(:klass)
@@ -529,7 +561,8 @@ class BelongsToAssociationsTest < ActiveRecord::TestCase
     assert final_cut.persisted?
     assert firm.persisted?
     assert_equal firm, final_cut.firm
-    assert_equal firm, final_cut.firm(true)
+    final_cut.association(:firm).reload
+    assert_equal firm, final_cut.firm
   end
 
   def test_assignment_before_child_saved_with_primary_key
@@ -541,7 +574,8 @@ class BelongsToAssociationsTest < ActiveRecord::TestCase
     assert final_cut.persisted?
     assert firm.persisted?
     assert_equal firm, final_cut.firm_with_primary_key
-    assert_equal firm, final_cut.firm_with_primary_key(true)
+    final_cut.association(:firm_with_primary_key).reload
+    assert_equal firm, final_cut.firm_with_primary_key
   end
 
   def test_new_record_with_foreign_key_but_no_object
@@ -1035,6 +1069,12 @@ class BelongsToAssociationsTest < ActiveRecord::TestCase
     record = Record.create!
     Column.create! record: record
     assert_equal 1, Column.count
+  end
+
+  def test_association_force_reload_with_only_true_is_deprecated
+    client = Client.find(3)
+
+    assert_deprecated { client.firm(true) }
   end
 end
 

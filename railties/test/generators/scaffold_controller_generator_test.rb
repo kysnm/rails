@@ -182,7 +182,18 @@ class ScaffoldControllerGeneratorTest < Rails::Generators::TestCase
 
     Dir.chdir(engine_path) do
       quietly { `bin/rails g controller dashboard foo` }
-      assert_match(/2 runs, 2 assertions, 0 failures, 0 errors/, `bundle exec rake test 2>&1`)
+      assert_match(/2 runs, 2 assertions, 0 failures, 0 errors/, `bin/rails test 2>&1`)
+    end
+  end
+
+  def test_controller_tests_pass_by_default_inside_full_engine
+    Dir.chdir(destination_root) { `bundle exec rails plugin new bukkits --full` }
+
+    engine_path = File.join(destination_root, "bukkits")
+
+    Dir.chdir(engine_path) do
+      quietly { `bin/rails g controller dashboard foo` }
+      assert_match(/2 runs, 2 assertions, 0 failures, 0 errors/, `bin/rails test 2>&1`)
     end
   end
 

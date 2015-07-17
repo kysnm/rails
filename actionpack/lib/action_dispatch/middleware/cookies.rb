@@ -4,8 +4,6 @@ require 'active_support/core_ext/object/blank'
 require 'active_support/key_generator'
 require 'active_support/message_verifier'
 require 'active_support/json'
-      require 'objspace'
-      include ObjectSpace
 
 module ActionDispatch
   # \Cookies are read and written through ActionController#cookies.
@@ -229,17 +227,12 @@ module ActionDispatch
         }
       end
 
-      ObjectSpace.trace_object_allocations_start
-
-      def self.build(request)
+      def self.build(request, host, secure, cookies)
         key_generator = request.get_header GENERATOR_KEY
         options = options_for_env request
 
-        host = request.host
-        secure = request.ssl?
-
         new(key_generator, host, secure, options).tap do |hash|
-          hash.update(request.cookies)
+          hash.update(cookies)
         end
       end
 
@@ -284,6 +277,10 @@ module ActionDispatch
       def update(other_hash)
         @cookies.update other_hash.stringify_keys
         self
+      end
+
+      def to_header
+        @cookies.map { |k,v| "#{k}=#{v}" }.join ';'
       end
 
       def handle_options(options) #:nodoc:

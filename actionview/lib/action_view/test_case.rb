@@ -24,8 +24,8 @@ module ActionView
       def initialize
         super
         self.class.controller_path = ""
-        @request = ActionController::TestRequest.new
-        @response = ActionController::TestResponse.new
+        @request = ActionController::TestRequest.create
+        @response = ActionDispatch::TestResponse.new
 
         @request.env.delete('PATH_INFO')
         @params = {}

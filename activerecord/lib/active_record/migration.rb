@@ -138,8 +138,8 @@ module ActiveRecord
   #   <tt>:name</tt>, <tt>:unique</tt> (e.g.
   #   <tt>{ name: 'users_name_index', unique: true }</tt>) and <tt>:order</tt>
   #   (e.g. <tt>{ order: { name: :desc } }</tt>).
-  # * <tt>remove_index(table_name, column: column_name)</tt>: Removes the index
-  #   specified by +column_name+.
+  # * <tt>remove_index(table_name, column: column_names)</tt>: Removes the index
+  #   specified by +column_names+.
   # * <tt>remove_index(table_name, name: index_name)</tt>: Removes the index
   #   specified by +index_name+.
   # * <tt>add_reference(:table_name, :reference_name)</tt>: Adds a new column
@@ -640,7 +640,8 @@ module ActiveRecord
         unless @connection.respond_to? :revert
           unless arguments.empty? || [:execute, :enable_extension, :disable_extension].include?(method)
             arguments[0] = proper_table_name(arguments.first, table_name_options)
-            if [:rename_table, :add_foreign_key].include?(method)
+            if [:rename_table, :add_foreign_key].include?(method) ||
+              (method == :remove_foreign_key && !arguments.second.is_a?(Hash))
               arguments[1] = proper_table_name(arguments.second, table_name_options)
             end
           end

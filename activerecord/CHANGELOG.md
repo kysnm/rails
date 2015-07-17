@@ -1,3 +1,85 @@
+*   Deprecate force association reload by passing a truthy argument to
+    association method.
+
+    For collection association, you can call `#reload` on association proxy to
+    force a reload:
+
+        @user.posts.reload   # Instead of @user.posts(true)
+
+    For singular association, you can call `#reload` on the parent object to
+    clear its association cache then call the association method:
+
+        @user.reload.profile   # Instead of @user.profile(true)
+
+    Passing a truthy argument to force association to reload will be removed in
+    Rails 5.1.
+
+    *Prem Sichanugrist*
+
+*   Replaced `ActiveSupport::Concurrency::Latch` with `Concurrent::CountDownLatch`
+    from the concurrent-ruby gem.
+
+    *Jerry D'Antonio*
+
+*   Fix through associations using scopes having the scope merged multiple
+    times.
+
+    Fixes #20721.
+    Fixes #20727.
+
+    *Sean Griffin*
+
+*   `ActiveRecord::Base.dump_schema_after_migration` applies migration tasks
+    other than `db:migrate`. (eg. `db:rollback`, `db:migrate:dup`, ...)
+
+    Fixes #20743.
+
+    *Yves Senn*
+
+*   Add alternate syntax to make `change_column_default` reversible.
+
+    User can pass in `:from` and `:to` to make `change_column_default` command
+    become reversible.
+
+    Example:
+
+        change_column_default :posts, :status, from: nil, to: "draft"
+        change_column_default :users, :authorized, from: true, to: false
+
+    *Prem Sichanugrist*
+
+*   Prevent error when using `force_reload: true` on an unassigned polymorphic
+    belongs_to association.
+
+    Fixes #20426.
+
+    *James Dabbs*
+
+*   Correctly raise `ActiveRecord::AssociationTypeMismatch` when assigning
+    a wrong type to a namespaced association.
+
+    Fixes #20545.
+
+    *Diego Carrion*
+
+*   `validates_absence_of` respects `marked_for_destruction?`.
+
+    Fixes #20449.
+
+    *Yves Senn*
+
+*   Include the `Enumerable` module in `ActiveRecord::Relation`
+
+    *Sean Griffin & bogdan*
+
+*   Use `Enumerable#sum` in `ActiveRecord::Relation` if a block is given.
+
+    *Sean Griffin*
+
+*   Let `WITH` queries (Common Table Expressions) be explainable.
+
+    *Vladimir Kochnev*
+
 *   Make `remove_index :table, :column` reversible.
 
     *Yves Senn*

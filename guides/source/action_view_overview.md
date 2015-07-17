@@ -725,7 +725,7 @@ Returns a select tag with options for each of the seconds 0 through 59 with the 
 
 ```ruby
 # Generates a select field for seconds that defaults to the seconds for the time provided
-select_second(Time.now + 16.minutes)
+select_second(Time.now + 16.seconds)
 ```
 
 #### select_time
@@ -1059,14 +1059,6 @@ If `@article.author_ids` is [1], this would return:
 <input name="article[author_ids][]" type="hidden" value="" />
 ```
 
-#### country_options_for_select
-
-Returns a string of option tags for pretty much any country in the world.
-
-#### country_select
-
-Returns select and option tags for the given object and method, using country_options_for_select to generate the list of option tags.
-
 #### option_groups_from_collection_for_select
 
 Returns a string of `option` tags, like `options_from_collection_for_select`, but groups them by `optgroup` tags based on the object relationships of the arguments.
@@ -1153,8 +1145,8 @@ If `@article.person_id` is 1, this would become:
 <select name="article[person_id]">
   <option value=""></option>
   <option value="1" selected="selected">David</option>
-  <option value="2">Sam</option>
-  <option value="3">Tobias</option>
+  <option value="2">Eileen</option>
+  <option value="3">Rafael</option>
 </select>
 ```
 
@@ -1429,7 +1421,7 @@ This sanitize helper will HTML encode all tags and strip all attributes that are
 sanitize @article.body
 ```
 
-If either the `:attributes` or `:tags` options are passed, only the mentioned tags and attributes are allowed and nothing else.
+If either the `:attributes` or `:tags` options are passed, only the mentioned attributes and tags are allowed and nothing else.
 
 ```ruby
 sanitize @article.body, tags: %w(table tr td), attributes: %w(id class style)

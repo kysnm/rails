@@ -354,7 +354,7 @@ module ActionDispatch
     end
 
     def cookie_jar
-      @cookie_jar ||= Cookies::CookieJar.build(self)
+      @cookie_jar ||= Cookies::CookieJar.build(self, host, ssl?, cookies)
     end
 
     def get_header(name)
