@@ -293,7 +293,7 @@ module ActionDispatch
     # Override Rack's GET method to support indifferent access
     def GET
       get_header "action_dispatch.request.query_parameters" do |k|
-        set_header k, Utils.deep_munge(normalize_encode_params(super || {}))
+        set_header k, normalize_encode_params(super || {})
       end
     rescue Rack::Utils::ParameterTypeError, Rack::Utils::InvalidParameterError => e
       raise ActionController::BadRequest.new(:query, e)
@@ -303,7 +303,7 @@ module ActionDispatch
     # Override Rack's POST method to support indifferent access
     def POST
       get_header "action_dispatch.request.request_parameters" do |k|
-        set_header k, Utils.deep_munge(normalize_encode_params(super || {}))
+        set_header k, normalize_encode_params(super || {})
       end
     rescue Rack::Utils::ParameterTypeError, Rack::Utils::InvalidParameterError => e
       raise ActionController::BadRequest.new(:request, e)
@@ -323,11 +323,6 @@ module ActionDispatch
     def local?
       LOCALHOST =~ remote_addr && LOCALHOST =~ remote_ip
     end
-
-    protected
-      def parse_query(*)
-        Utils.deep_munge(super)
-      end
 
     private
       def check_method(name)

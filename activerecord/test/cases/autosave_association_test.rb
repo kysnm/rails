@@ -67,6 +67,14 @@ class TestAutosaveAssociationsInGeneral < ActiveRecord::TestCase
     assert_no_difference_when_adding_callbacks_twice_for Pirate, :parrots
   end
 
+  def test_cyclic_autosaves_do_not_add_multiple_validations
+    ship = ShipWithoutNestedAttributes.new
+    ship.prisoners.build
+
+    assert_not ship.valid?
+    assert_equal 1, ship.errors[:name].length
+  end
+
   private
 
   def assert_no_difference_when_adding_callbacks_twice_for(model, association_name)
@@ -1145,6 +1153,13 @@ class TestAutosaveAssociationOnAHasOneAssociation < ActiveRecord::TestCase
 
   def test_should_not_load_the_associated_model
     assert_queries(1) { @pirate.catchphrase = 'Arr'; @pirate.save! }
+  end
+
+  def test_mark_for_destruction_is_ignored_without_autosave_true
+    ship = ShipWithoutNestedAttributes.new(name: "The Black Flag")
+    ship.parts.build.mark_for_destruction
+
+    assert_not ship.valid?
   end
 end
 

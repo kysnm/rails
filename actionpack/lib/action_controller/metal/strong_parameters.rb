@@ -378,13 +378,15 @@ module ActionController
     #   params.fetch(:none, 'Francesco')    # => "Francesco"
     #   params.fetch(:none) { 'Francesco' } # => "Francesco"
     def fetch(key, *args, &block)
-      convert_hashes_to_parameters(
-        key,
-        @parameters.fetch(key, *args, &block),
-        false
+      convert_value_to_parameters(
+        @parameters.fetch(key) {
+          if block_given?
+            yield
+          else
+            args.fetch(0) { raise ActionController::ParameterMissing.new(key) }
+          end
+        }
       )
-    rescue KeyError
-      raise ActionController::ParameterMissing.new(key)
     end
 
     # Returns a new <tt>ActionController::Parameters</tt> instance that
@@ -471,7 +473,7 @@ module ActionController
     # optional code block is given and the key is not found, pass in the key
     # and return the result of block.
     def delete(key, &block)
-      convert_hashes_to_parameters(key, @parameters.delete(key), false)
+      convert_value_to_parameters(@parameters.delete(key))
     end
 
     # Returns a new instance of <tt>ActionController::Parameters</tt> with only
@@ -551,21 +553,23 @@ module ActionController
         end
       end
 
-      def convert_hashes_to_parameters(key, value, assign_if_converted=true)
+      def convert_hashes_to_parameters(key, value)
         converted = convert_value_to_parameters(value)
-        @parameters[key] = converted if assign_if_converted && !converted.equal?(value)
+        @parameters[key] = converted unless converted.equal?(value)
         converted
       end
 
       def convert_value_to_parameters(value)
-        if value.is_a?(Array) && !converted_arrays.member?(value)
+        case value
+        when Array
+          return value if converted_arrays.member?(value)
           converted = value.map { |_| convert_value_to_parameters(_) }
           converted_arrays << converted
           converted
-        elsif value.is_a?(Parameters) || !value.is_a?(Hash)
-          value
-        else
+        when Hash
           self.class.new(value)
+        else
+          value
         end
       end
 
