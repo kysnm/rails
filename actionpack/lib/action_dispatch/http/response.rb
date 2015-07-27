@@ -45,7 +45,9 @@ module ActionDispatch # :nodoc:
     # If a character set has been defined for this response (see charset=) then
     # the character set information will also be included in the content type
     # information.
-    attr_reader   :content_type
+    def content_type
+      get_header 'Content-Type'
+    end
 
     # The charset of the response. HTML wants to know the encoding of the
     # content you're giving them, so we need to send that along.
@@ -126,12 +128,11 @@ module ActionDispatch # :nodoc:
       @committed    = false
       @sending      = false
       @sent         = false
-      @content_type = nil
       @charset      = self.class.default_charset
 
       if content_type = self[CONTENT_TYPE]
         type, charset = content_type.split(/;\s*charset=/)
-        @content_type = Mime::Type.lookup(type)
+        self.content_type = Mime::Type.lookup(type)
         @charset = charset || self.class.default_charset
       end
 
@@ -177,14 +178,9 @@ module ActionDispatch # :nodoc:
     def committed?; synchronize { @committed }; end
     def sent?;      synchronize { @sent };      end
 
-    # Sets the HTTP status code.
-    def status=(status)
-      @status = Rack::Utils.status_code(status)
-    end
-
     # Sets the HTTP content type.
     def content_type=(content_type)
-      @content_type = content_type.to_s
+      set_header 'Content-Type', content_type.to_s
     end
 
     # Sets the HTTP character set.
@@ -198,7 +194,7 @@ module ActionDispatch # :nodoc:
 
     # The response code of the request.
     def response_code
-      @status
+      status
     end
 
     # Returns a string to ensure compatibility with <tt>Net::HTTPResponse</tt>.
