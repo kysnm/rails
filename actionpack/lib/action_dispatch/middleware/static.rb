@@ -47,27 +47,22 @@ module ActionDispatch
       end
     end
 
-    def call(env)
-      path      = env['PATH_INFO']
+    def call(req, res)
+      path      = req.path_info
       gzip_path = gzip_file_path(path)
 
-      if gzip_path && gzip_encoding_accepted?(env)
-        env['PATH_INFO']            = gzip_path
-        status, headers, body       = @file_server.call(env)
-        if status == 304
-          return [status, headers, body]
-        end
-        headers['Content-Encoding'] = 'gzip'
-        headers['Content-Type']     = content_type(path)
+      res.headers['Vary'] = 'Accept-Encoding' if gzip_path
+
+      if gzip_path && gzip_encoding_accepted?(req)
+        req.path_info               = gzip_path
+        res['Content-Encoding']     = 'gzip'
+        res['Content-Type']         = content_type(path)
+        @file_server.call(req, res)
       else
-        status, headers, body = @file_server.call(env)
+        @file_server.call(req, res)
       end
-
-      headers['Vary'] = 'Accept-Encoding' if gzip_path
-
-      return [status, headers, body]
     ensure
-      env['PATH_INFO'] = path
+      req.path_info = path
     end
 
     private
@@ -79,8 +74,8 @@ module ActionDispatch
         ::Rack::Mime.mime_type(::File.extname(path), 'text/plain'.freeze)
       end
 
-      def gzip_encoding_accepted?(env)
-        env['HTTP_ACCEPT_ENCODING'] =~ /\bgzip\b/i
+      def gzip_encoding_accepted?(req)
+        req.get_header('HTTP_ACCEPT_ENCODING') =~ /\bgzip\b/i
       end
 
       def gzip_file_path(path)
@@ -114,8 +109,8 @@ module ActionDispatch
       when 'GET', 'HEAD'
         path = req.path_info.chomp('/').freeze
         if match = @file_handler.match?(path)
-          env['PATH_INFO'] = match
-          return @file_handler.call(env)
+          req.path_info = match
+          return @file_handler.call(req, res)
         end
       end
 

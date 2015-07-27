@@ -9,9 +9,9 @@ module ActionView
     @@digest_monitor = Monitor.new
 
     class PerRequestDigestCacheExpiry < Struct.new(:app) # :nodoc:
-      def call(env)
+      def call(req, res)
         ActionView::Digestor.cache.clear
-        app.call(env)
+        app.call(req, res)
       end
     end
 
