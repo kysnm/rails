@@ -40,7 +40,7 @@ module ActionDispatch
           end
         end
 
-        def serve(req)
+        def serve(req, res)
           return [ 404, {'X-Cascade' => 'pass'}, [] ] unless matches?(req)
 
           if dispatcher?

@@ -16,9 +16,8 @@ module ActiveRecord
     config.app_generators.orm :active_record, :migration => true,
                                               :timestamps => true
 
-    config.app_middleware.use_event ActiveRecord::QueryCache
-
     config.app_middleware.use_event ActiveRecord::ConnectionAdapters::ConnectionManagement
+    config.app_middleware.use_event ActiveRecord::QueryCache
 
     config.action_dispatch.rescue_responses.merge!(
       'ActiveRecord::RecordNotFound'   => :not_found,
