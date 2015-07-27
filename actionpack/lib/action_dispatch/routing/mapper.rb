@@ -46,7 +46,11 @@ module ActionDispatch
           if dispatcher?
             @app.serve req
           else
-            @app.call req.env
+            status, headers, body = @app.call req.env
+            res.status = status
+            headers.each_pair { |k,v| res.set_header k, v }
+            body.each { |part| res.write part }
+            res.finish
           end
         end
 
