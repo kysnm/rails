@@ -44,13 +44,9 @@ module ActionDispatch
           return [ 404, {'X-Cascade' => 'pass'}, [] ] unless matches?(req)
 
           if dispatcher?
-            @app.serve req
+            @app.serve req, res
           else
-            status, headers, body = @app.call req.env
-            res.status = status
-            headers.each_pair { |k,v| res.set_header k, v }
-            body.each { |part| res.write part }
-            res.finish
+            @app.call req, res
           end
         end
 
