@@ -160,7 +160,7 @@ module ActiveSupport
     # This method uses the #pluralize method on the last word in the string.
     #
     #   tableize('RawScaledScorer') # => "raw_scaled_scorers"
-    #   tableize('egg_and_ham')     # => "egg_and_hams"
+    #   tableize('ham_and_egg')     # => "ham_and_eggs"
     #   tableize('fancyCategory')   # => "fancy_categories"
     def tableize(class_name)
       pluralize(underscore(class_name))
@@ -170,7 +170,7 @@ module ActiveSupport
     # names to models. Note that this returns a string and not a Class (To
     # convert to an actual class follow +classify+ with #constantize).
     #
-    #   classify('egg_and_hams') # => "EggAndHam"
+    #   classify('ham_and_eggs') # => "HamAndEgg"
     #   classify('posts')        # => "Post"
     #
     # Singular names are not handled correctly:
@@ -354,7 +354,7 @@ module ActiveSupport
     #   const_regexp("Foo::Bar::Baz") # => "Foo(::Bar(::Baz)?)?"
     #   const_regexp("::")            # => "::"
     def const_regexp(camel_cased_word) #:nodoc:
-      parts = camel_cased_word.split("::")
+      parts = camel_cased_word.split("::".freeze)
 
       return Regexp.escape(camel_cased_word) if parts.blank?
 
@@ -372,7 +372,7 @@ module ActiveSupport
     def apply_inflections(word, rules)
       result = word.to_s.dup
 
-      if word.empty? || inflections.uncountables.include?(result.downcase[/\b\w+\Z/])
+      if word.empty? || inflections.uncountables.uncountable?(result)
         result
       else
         rules.each { |(rule, replacement)| break if result.sub!(rule, replacement) }

@@ -12,7 +12,7 @@ module ActionDispatch
         return params if params
 
         params = begin
-                   request_parameters.merge(query_parameters)
+                   (request_parameters || {}).merge(query_parameters)
                  rescue EOFError
                    query_parameters.dup
                  end

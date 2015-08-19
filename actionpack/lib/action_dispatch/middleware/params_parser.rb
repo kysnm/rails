@@ -1,9 +1,14 @@
-require 'active_support/core_ext/hash/conversions'
 require 'action_dispatch/http/request'
-require 'active_support/core_ext/hash/indifferent_access'
 
 module ActionDispatch
+  # ActionDispatch::ParamsParser works for all the requests having any Content-Length
+  # (like POST). It takes raw data from the request and puts it through the parser
+  # that is picked based on Content-Type header.
+  #
+  # In case of any error while parsing data ParamsParser::ParseError is raised.
   class ParamsParser
+    # Raised when raw data from the request cannot be parsed by the parser
+    # defined for request's content mime type.
     class ParseError < StandardError
       attr_reader :original_exception
 
@@ -21,24 +26,26 @@ module ActionDispatch
       }
     }
 
+    # Create a new +ParamsParser+ middleware instance.
+    #
+    # The +parsers+ argument can take Hash of parsers where key is identifying
+    # content mime type, and value is a lambda that is going to process data.
     def initialize(parsers = {})
       @parsers = DEFAULT_PARSERS.merge(parsers)
     end
 
-    def start_request(req, res)
-      default = req.get_header("action_dispatch.request.request_parameters") || {}
-      params = parse_formatted_parameters(req, @parsers, default)
-      req.set_header "action_dispatch.request.request_parameters", params
+    def start_request(request, res)
+      request.request_parameters = parse_formatted_parameters(request, @parsers)
     end
 
     def finish_request(req, res)
     end
 
     private
-      def parse_formatted_parameters(request, parsers, default)
-        return default if request.content_length.zero?
+      def parse_formatted_parameters(request, parsers)
+        return if request.content_length.zero?
 
-        strategy = parsers.fetch(request.content_mime_type) { return default }
+        strategy = parsers.fetch(request.content_mime_type) { return nil }
 
         strategy.call(request.raw_post)
 
@@ -48,8 +55,8 @@ module ActionDispatch
         raise ParseError.new(e.message, e)
       end
 
-      def logger(req)
-        req.get_header('action_dispatch.logger') || ActiveSupport::Logger.new($stderr)
+      def logger(request)
+        request.logger || ActiveSupport::Logger.new($stderr)
       end
   end
 end

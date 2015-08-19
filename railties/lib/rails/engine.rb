@@ -523,9 +523,7 @@ module Rails
 
     # Defines additional Rack env configuration that is added on each call.
     def env_config
-      @env_config ||= {
-        'action_dispatch.routes' => routes
-      }
+      @env_config ||= {}
     end
 
     # Defines the routes for this engine. If a block is given to
@@ -585,7 +583,7 @@ module Rails
     # I18n load paths are a special case since the ones added
     # later have higher priority.
     initializer :add_locales do
-      config.i18n.railties_load_path.concat(paths["config/locales"].existent)
+      config.i18n.railties_load_path << paths["config/locales"]
     end
 
     initializer :add_view_paths do

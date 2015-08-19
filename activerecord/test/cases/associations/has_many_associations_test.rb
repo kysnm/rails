@@ -31,6 +31,8 @@ require 'models/student'
 require 'models/pirate'
 require 'models/ship'
 require 'models/ship_part'
+require 'models/treasure'
+require 'models/parrot'
 require 'models/tyre'
 require 'models/subscriber'
 require 'models/subscription'
@@ -930,6 +932,25 @@ class HasManyAssociationsTest < ActiveRecord::TestCase
     assert_equal 1, new_firm.clients_of_firm.size
     new_firm.clients_of_firm.delete(new_client)
     assert_equal 0, new_firm.clients_of_firm.size
+  end
+
+  def test_has_many_without_counter_cache_option
+    # Ship has a conventionally named `treasures_count` column, but the counter_cache
+    # option is not given on the association.
+    ship = Ship.create(name: 'Countless', treasures_count: 10)
+
+    assert_not ship.treasures.instance_variable_get('@association').send(:has_cached_counter?)
+
+    # Count should come from sql count() of treasures rather than treasures_count attribute
+    assert_equal ship.treasures.size, 0
+
+    assert_no_difference lambda { ship.reload.treasures_count }, "treasures_count should not be changed" do
+      ship.treasures.create(name: 'Gold')
+    end
+
+    assert_no_difference lambda { ship.reload.treasures_count }, "treasures_count should not be changed" do
+      ship.treasures.destroy_all
+    end
   end
 
   def test_deleting_updates_counter_cache
@@ -2277,5 +2298,43 @@ class HasManyAssociationsTest < ActiveRecord::TestCase
     company = Company.find(1)
 
     assert_deprecated { company.clients_of_firm(true) }
+  end
+
+  class AuthorWithErrorDestroyingAssociation < ActiveRecord::Base
+    self.table_name = "authors"
+    has_many :posts_with_error_destroying,
+      class_name: "PostWithErrorDestroying",
+      foreign_key: :author_id,
+      dependent: :destroy
+  end
+
+  class PostWithErrorDestroying < ActiveRecord::Base
+    self.table_name = "posts"
+    self.inheritance_column = nil
+    before_destroy -> { throw :abort }
+  end
+
+  def test_destroy_does_not_raise_when_association_errors_on_destroy
+    assert_no_difference "AuthorWithErrorDestroyingAssociation.count" do
+      author = AuthorWithErrorDestroyingAssociation.first
+
+      assert_not author.destroy
+    end
+  end
+
+  def test_destroy_with_bang_bubbles_errors_from_associations
+    error = assert_raises ActiveRecord::RecordNotDestroyed do
+      AuthorWithErrorDestroyingAssociation.first.destroy!
+    end
+
+    assert_instance_of PostWithErrorDestroying, error.record
+  end
+
+  def test_ids_reader_memoization
+    car = Car.create!(name: 'Tofaş')
+    bulb = Bulb.create!(car: car)
+
+    assert_equal [bulb.id], car.bulb_ids
+    assert_no_queries { car.bulb_ids }
   end
 end

@@ -35,12 +35,14 @@ module ActionDispatch
 
         HTTP_ACCEPT HTTP_ACCEPT_CHARSET HTTP_ACCEPT_ENCODING
         HTTP_ACCEPT_LANGUAGE HTTP_CACHE_CONTROL HTTP_FROM
-        HTTP_NEGOTIATE HTTP_PRAGMA ].freeze
+        HTTP_NEGOTIATE HTTP_PRAGMA HTTP_CLIENT_IP
+        HTTP_X_FORWARDED_FOR HTTP_VERSION
+        ].freeze
 
     ENV_METHODS.each do |env|
       class_eval <<-METHOD, __FILE__, __LINE__ + 1
         def #{env.sub(/^HTTP_/n, '').downcase}  # def accept_charset
-          get_header("#{env}")                        #   @env["HTTP_ACCEPT_CHARSET"]
+          get_header("#{env}".freeze)                        #   @env["HTTP_ACCEPT_CHARSET"]
         end                                     # end
       METHOD
     end
@@ -105,11 +107,15 @@ module ActionDispatch
     # the application should use), this \method returns the overridden
     # value, not the original.
     def request_method
-      @request_method ||= check_method(env["REQUEST_METHOD"])
+      @request_method ||= check_method(super)
     end
 
     def routes # :nodoc:
       env["action_dispatch.routes".freeze]
+    end
+
+    def routes=(routes) # :nodoc:
+      env["action_dispatch.routes".freeze] = routes
     end
 
     def original_script_name # :nodoc:
@@ -120,10 +126,29 @@ module ActionDispatch
       env[_routes.env_key]
     end
 
+    def engine_script_name=(name) # :nodoc:
+      env[routes.env_key] = name.dup
+    end
+
     def request_method=(request_method) #:nodoc:
       if check_method(request_method)
         @request_method = env["REQUEST_METHOD"] = request_method
       end
+    end
+
+    def controller_instance # :nodoc:
+      env['action_controller.instance'.freeze]
+    end
+
+    def controller_instance=(controller) # :nodoc:
+      env['action_controller.instance'.freeze] = controller
+    end
+
+    def show_exceptions? # :nodoc:
+      # We're treating `nil` as "unset", and we want the default setting to be
+      # `true`.  This logic should be extracted to `env_config` and calculated
+      # once.
+      !(env['action_dispatch.show_exceptions'.freeze] == false)
     end
 
     # Returns a symbol form of the #request_method
@@ -209,7 +234,11 @@ module ActionDispatch
     # Returns the IP address of client as a +String+,
     # usually set by the RemoteIp middleware.
     def remote_ip
-      @remote_ip ||= (@env["action_dispatch.remote_ip"] || ip).to_s
+      @remote_ip ||= (env["action_dispatch.remote_ip"] || ip).to_s
+    end
+
+    def remote_ip=(remote_ip)
+      env["action_dispatch.remote_ip".freeze] = remote_ip
     end
 
     ACTION_DISPATCH_REQUEST_ID = "action_dispatch.request_id".freeze # :nodoc:
@@ -324,6 +353,14 @@ module ActionDispatch
       LOCALHOST =~ remote_addr && LOCALHOST =~ remote_ip
     end
 
+    def request_parameters=(params)
+      env["action_dispatch.request.request_parameters".freeze] = params
+    end
+
+    def logger
+      env["action_dispatch.logger".freeze]
+    end
+
     private
       def check_method(name)
         HTTP_METHOD_LOOKUP[name] || raise(ActionController::UnknownHttpMethod, "#{name}, accepted HTTP methods are #{HTTP_METHODS[0...-1].join(', ')}, and #{HTTP_METHODS[-1]}")
@@ -349,7 +386,7 @@ module ActionDispatch
     end
 
     def cookie_jar
-      @cookie_jar ||= Cookies::CookieJar.build(self, host, ssl?, cookies)
+      @cookie_jar ||= Cookies::CookieJar.build(self, cookies)
     end
 
     def get_header(name)
@@ -360,6 +397,10 @@ module ActionDispatch
           @env_config[name]
         end
       }
+    end
+
+    def env
+      super.merge @env_config
     end
 
     def engine_script_name(_routes)

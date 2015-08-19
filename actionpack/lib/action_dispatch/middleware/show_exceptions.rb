@@ -26,21 +26,21 @@ module ActionDispatch
       @exceptions_app = exceptions_app
     end
 
-    def call(req, res)
-      @app.call(req, res)
+    def call(request, res)
+      @app.call(request, res)
     rescue Exception => exception
-      raise
-      if req.get_header('action_dispatch.show_exceptions') == false
-        raise exception
+      if request.show_exceptions?
+        render_exception(request, res, exception)
       else
-        render_exception(req, res, exception)
+        raise exception
       end
     end
 
     private
 
     def render_exception(req, res, exception)
-      wrapper = ExceptionWrapper.new(req, exception)
+      backtrace_cleaner = req.get_header('action_dispatch.backtrace_cleaner')
+      wrapper = ExceptionWrapper.new(backtrace_cleaner, exception)
       status  = wrapper.status_code
       req.set_header("action_dispatch.exception", wrapper.exception)
       req.set_header("action_dispatch.original_path", req.path_info)

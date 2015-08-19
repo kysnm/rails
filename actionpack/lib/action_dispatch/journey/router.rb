@@ -1,5 +1,4 @@
 require 'action_dispatch/journey/router/utils'
-require 'action_dispatch/journey/router/strexp'
 require 'action_dispatch/journey/routes'
 require 'action_dispatch/journey/formatter'
 
@@ -100,7 +99,7 @@ module ActionDispatch
           }
 
           routes =
-            if req.request_method == "HEAD"
+            if req.head?
               match_head_routes(routes, req)
             else
               match_routes(routes, req)
@@ -119,7 +118,7 @@ module ActionDispatch
         end
 
         def match_head_routes(routes, req)
-          verb_specific_routes = routes.reject { |route| route.verb == // }
+          verb_specific_routes = routes.select(&:requires_matching_verb?)
           head_routes = match_routes(verb_specific_routes, req)
 
           if head_routes.empty?

@@ -43,8 +43,8 @@ module ActionDispatch
       @routes_app = routes_app
     end
 
-    def call(req, res)
-      @app.call(req, res)
+    def call(request, res)
+      @app.call(request, res)
 
       # FIXME: what does this mean in the context of req / res lifecycle?
       if res.get_header('X-Cascade') == 'pass'
@@ -52,19 +52,18 @@ module ActionDispatch
         raise ActionController::RoutingError, "No route matches [#{env['REQUEST_METHOD']}] #{env['PATH_INFO'].inspect}"
       end
     rescue Exception => exception
-      raise
-      raise exception if env['action_dispatch.show_exceptions'] == false
-      render_exception(env, exception)
+      raise exception unless request.show_exceptions?
+      render_exception(request, exception)
     end
 
     private
 
-    def render_exception(env, exception)
-      wrapper = ExceptionWrapper.new(env, exception)
+    def render_exception(request, exception)
+      backtrace_cleaner = request.get_header('action_dispatch.backtrace_cleaner')
+      wrapper = ExceptionWrapper.new(backtrace_cleaner, exception)
       log_error(env, wrapper)
 
-      if env['action_dispatch.show_detailed_exceptions']
-        request = Request.new(env)
+      if request.get_header('action_dispatch.show_detailed_exceptions')
         traces = wrapper.traces
 
         trace_to_show = 'Application Trace'
