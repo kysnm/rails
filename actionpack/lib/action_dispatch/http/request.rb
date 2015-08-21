@@ -67,6 +67,19 @@ module ActionDispatch
       end
     end
 
+    def controller_class
+      check_path_parameters!
+      params = path_parameters
+      params[:controller] = params[:controller].underscore if params.key?(:controller)
+      params[:action] ||= 'index'
+
+      yield unless params.key? :controller
+
+      controller_param = params[:controller]
+      const_name = "#{controller_param.camelize}Controller"
+      ActiveSupport::Dependencies.constantize(const_name)
+    end
+
     def key?(key)
       @env.key?(key)
     end

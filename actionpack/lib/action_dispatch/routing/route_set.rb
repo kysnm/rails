@@ -27,57 +27,23 @@ module ActionDispatch
         def dispatcher?; true; end
 
         def serve(req)
-          req.check_path_parameters!
           params = req.path_parameters
-
-          prepare_params!(params)
-
-          controller = controller(params, @raise_on_name_error) do
+          controller = req.controller_class do
             return [404, {'X-Cascade' => 'pass'}, []]
           end
-
           dispatch(controller, params[:action], req)
-        end
-
-        def prepare_params!(params)
-          normalize_controller!(params)
-          merge_default_action!(params)
-        end
-
-        # If this is a default_controller (i.e. a controller specified by the user)
-        # we should raise an error in case it's not found, because it usually means
-        # a user error. However, if the controller was retrieved through a dynamic
-        # segment, as in :controller(/:action), we should simply return nil and
-        # delegate the control back to Rack cascade. Besides, if this is not a default
-        # controller, it means we should respect the @scope[:module] parameter.
-        def controller(params, raise_on_name_error=true)
-          controller_reference params.fetch(:controller) { yield }
         rescue NameError => e
-          raise ActionController::RoutingError, e.message, e.backtrace if raise_on_name_error
-          yield
-        end
-
-      protected
-
-        attr_reader :controller_class_names
-
-        def controller_reference(controller_param)
-          const_name = "#{controller_param.camelize}Controller"
-          ActiveSupport::Dependencies.constantize(const_name)
+          if @raise_on_name_error
+            raise ActionController::RoutingError, e.message, e.backtrace
+          else
+            [404, {'X-Cascade' => 'pass'}, []]
+          end
         end
 
       private
 
         def dispatch(controller, action, req)
           controller.action(action).call(req.env)
-        end
-
-        def normalize_controller!(params)
-          params[:controller] = params[:controller].underscore if params.key?(:controller)
-        end
-
-        def merge_default_action!(params)
-          params[:action] ||= 'index'
         end
       end
 
