@@ -28,7 +28,7 @@ module ActionDispatch
 
         def serve(req)
           params = req.path_parameters
-          controller = req.controller_class do
+          controller = controller_reference(req) do
             return [404, {'X-Cascade' => 'pass'}, []]
           end
           dispatch(controller, params[:action], req)
@@ -41,6 +41,10 @@ module ActionDispatch
         end
 
       private
+
+        def controller_reference(req, &block)
+          req.controller_class(&block)
+        end
 
         def dispatch(controller, action, req)
           controller.action(action).call(req.env)
@@ -724,14 +728,13 @@ module ActionDispatch
           req.path_parameters = old_params.merge params
           app = route.app
           if app.matches?(req) && app.dispatcher?
-            dispatcher = app.app
-
-            dispatcher.controller(params, false) do
+            begin
+              req.controller_class
+            rescue NameError
               raise ActionController::RoutingError, "A route matches #{path.inspect}, but references missing controller: #{params[:controller].camelize}Controller"
             end
 
-            dispatcher.prepare_params!(params)
-            return params
+            return req.path_parameters
           end
         end
 
