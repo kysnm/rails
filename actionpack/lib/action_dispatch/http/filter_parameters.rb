@@ -56,7 +56,7 @@ module ActionDispatch
       end
 
       def env_filter
-        user_key = @env.fetch("action_dispatch.parameter_filter") {
+        user_key = get_header("action_dispatch.parameter_filter") {
           return NULL_ENV_FILTER
         }
         parameter_filter_for(Array(user_key) + ENV_MATCH)

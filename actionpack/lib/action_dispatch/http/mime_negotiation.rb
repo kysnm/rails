@@ -39,15 +39,7 @@ module ActionDispatch
           else
             Mime::Type.parse(header)
           end
-          set_header(k, v)
-        end
-      end
-
-      trap('INFO') do
-        Thread.list.each do |thread|
-          puts "#" * 90
-          puts thread.backtrace
-          puts "#" * 90
+          set_header k, v
         end
       end
 
@@ -62,17 +54,14 @@ module ActionDispatch
       end
 
       def formats
-        formats = get_header("action_dispatch.request.formats")
-        return formats if formats
-
-        formats = begin
+        get_header("action_dispatch.request.formats") do |k|
           params_readable = begin
                               parameters[:format]
                             rescue ActionController::BadRequest
                               false
                             end
 
-          if params_readable
+          v = if params_readable
             Array(Mime[parameters[:format]])
           elsif use_accept_header && valid_accept_header
             accepts
@@ -81,10 +70,8 @@ module ActionDispatch
           else
             [Mime::HTML]
           end
+          set_header k, v
         end
-
-        set_header("action_dispatch.request.formats", formats)
-        formats
       end
 
       # Sets the \variant for template.
@@ -118,7 +105,7 @@ module ActionDispatch
       #   end
       def format=(extension)
         parameters[:format] = extension.to_s
-        @env["action_dispatch.request.formats"] = [Mime::Type.lookup_by_extension(parameters[:format])]
+        set_header "action_dispatch.request.formats", [Mime::Type.lookup_by_extension(parameters[:format])]
       end
 
       # Sets the \formats by string extensions. This differs from #format= by allowing you
@@ -137,9 +124,9 @@ module ActionDispatch
       #   end
       def formats=(extensions)
         parameters[:format] = extensions.first.to_s
-        @env["action_dispatch.request.formats"] = extensions.collect do |extension|
+        set_header "action_dispatch.request.formats", extensions.collect { |extension|
           Mime::Type.lookup_by_extension(extension)
-        end
+        }
       end
 
       # Receives an array of mimes and return the first user sent mime that
