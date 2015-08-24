@@ -8,20 +8,22 @@ require 'active_support/json'
 module ActionDispatch
   class EngineRequest < SimpleDelegator
     def cookie_jar
-      env['action_dispatch.cookies'.freeze] ||= Cookies::CookieJar.build(self, cookies)
+      get_header('action_dispatch.cookies'.freeze) do |k|
+        self.cookie_jar = Cookies::CookieJar.build(self, cookies)
+      end
     end
 
     # :stopdoc:
     def have_cookie_jar?
-      get_header('action_dispatch.cookies'.freeze)
+      has_header? 'action_dispatch.cookies'.freeze
     end
 
     def cookie_jar=(jar)
-      set_header('action_dispatch.cookies'.freeze, jar)
+      set_header 'action_dispatch.cookies'.freeze, jar
     end
 
     def key_generator
-      get_header(Cookies::GENERATOR_KEY)
+      get_header Cookies::GENERATOR_KEY
     end
 
     def signed_cookie_salt
