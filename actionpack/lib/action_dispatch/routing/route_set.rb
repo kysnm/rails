@@ -28,7 +28,7 @@ module ActionDispatch
 
         def serve(req, res)
           params = req.path_parameters
-          controller = controller_reference(req) do
+          controller = req.controller_class do
             return [404, {'X-Cascade' => 'pass'}, []]
           end
           dispatch(controller, params[:action], req, res)
@@ -38,11 +38,6 @@ module ActionDispatch
           else
             return [404, {'X-Cascade' => 'pass'}, []]
           end
-        end
-
-      protected
-        def controller_reference(req, &block)
-          req.controller_class(&block)
         end
 
       private
@@ -171,9 +166,9 @@ module ActionDispatch
             private
 
             def optimized_helper(args)
-              params = parameterize_args(args) { |k|
+              params = parameterize_args(args) do
                 raise_generation_error(args)
-              }
+              end
 
               @route.format params
             end
@@ -285,7 +280,7 @@ module ActionDispatch
 
       attr_accessor :formatter, :set, :named_routes, :default_scope, :router
       attr_accessor :disable_clear_and_finalize, :resources_path_names
-      attr_accessor :default_url_options, :dispatcher_class
+      attr_accessor :default_url_options
       attr_reader :env_key
 
       alias :routes :set
@@ -328,7 +323,6 @@ module ActionDispatch
         @set    = Journey::Routes.new
         @router = Journey::Router.new @set
         @formatter = Journey::Formatter.new self
-        @dispatcher_class = Routing::RouteSet::Dispatcher
       end
 
       def relative_url_root
@@ -342,6 +336,11 @@ module ActionDispatch
       def request_class
         ActionDispatch::Request
       end
+
+      def make_request(env)
+        request_class.new env
+      end
+      private :make_request
 
       def draw(&block)
         clear! unless @disable_clear_and_finalize
@@ -384,10 +383,6 @@ module ActionDispatch
         set.clear
         formatter.clear
         @prepend.each { |blk| eval_block(blk) }
-      end
-
-      def dispatcher(raise_on_name_error)
-        dispatcher_class.new(raise_on_name_error)
       end
 
       module MountedHelpers
@@ -715,7 +710,7 @@ module ActionDispatch
           raise ActionController::RoutingError, e.message
         end
 
-        req = request_class.new(env)
+        req = make_request(env)
         @router.recognize(req) do |route, params|
           params.merge!(extras)
           params.each do |key, value|

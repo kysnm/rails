@@ -19,7 +19,6 @@ begin
 rescue LoadError
   puts "'drb/unix' is not available"
 end
-require 'tempfile'
 
 PROCESS_COUNT = (ENV['N'] || 4).to_i
 
@@ -117,23 +116,38 @@ class ActionDispatch::IntegrationTest < ActiveSupport::TestCase
     get ':controller(/:action)'
   end
 
-  # Stub Rails dispatcher so it does not get controller references and
-  # simply return the controller#action as Rack::Body.
-  class StubDispatcher < ::ActionDispatch::Routing::RouteSet::Dispatcher
-    protected
-    def controller_reference(controller_param)
-      controller_param.params[:controller]
+  class DeadEndRoutes < ActionDispatch::Routing::RouteSet
+    # Stub Rails dispatcher so it does not get controller references and
+    # simply return the controller#action as Rack::Body.
+    class NullController
+      def initialize(controller_name)
+        @controller = controller_name
+        @action = nil
+      end
+
+      def action(action_name)
+        @action = action_name
+        self
+      end
+
+      def call(env)
+        [200, {'Content-Type' => 'text/html'}, ["#{@controller}##{@action}"]]
+      end
     end
 
-    def dispatch(controller, action, env)
-      [200, {'Content-Type' => 'text/html'}, ["#{controller}##{action}"]]
+    class NullControllerRequest < DelegateClass(ActionDispatch::Request)
+      def controller_class
+        NullController.new params[:controller]
+      end
+    end
+
+    def make_request env
+      NullControllerRequest.new super
     end
   end
 
-  def self.stub_controllers(config = nil)
-    route_set = ActionDispatch::Routing::RouteSet.new(*[config].compact)
-    route_set.dispatcher_class = StubDispatcher
-    yield route_set
+  def self.stub_controllers(config = ActionDispatch::Routing::RouteSet::DEFAULT_CONFIG)
+    yield DeadEndRoutes.new(config)
   end
 
   def with_routing(&block)
@@ -323,6 +337,25 @@ module RoutingTestHelpers
   end
 
   class TestSet < ActionDispatch::Routing::RouteSet
+    class Request < DelegateClass(ActionDispatch::Request)
+      def initialize(target, helpers, block, strict)
+        super(target)
+        @helpers = helpers
+        @block = block
+        @strict = strict
+      end
+
+      def controller_class
+        helpers = @helpers
+        block = @block
+        Class.new(@strict ? super : ActionController::Base) {
+          include helpers
+          define_method(:process) { |name| block.call(self) }
+          def to_a; [200, {}, []]; end
+        }
+      end
+    end
+
     attr_reader :strict
 
     def initialize(block, strict = false)
@@ -331,31 +364,10 @@ module RoutingTestHelpers
       super()
     end
 
-    class Dispatcher < ActionDispatch::Routing::RouteSet::Dispatcher
-      def initialize(defaults, set, block)
-        super(defaults)
-        @block = block
-        @set = set
-      end
+    private
 
-      def controller(params, default_controller=true)
-        super(params, @set.strict)
-      end
-
-      def controller_reference(controller_param)
-        block = @block
-        set = @set
-        super if @set.strict
-        Class.new(ActionController::Base) {
-          include set.url_helpers
-          define_method(:process) { |name| block.call(self) }
-          def to_a; [200, {}, []]; end
-        }
-      end
-    end
-
-    def dispatcher defaults
-      TestSet::Dispatcher.new defaults, self, @block
+    def make_request(env)
+      Request.new super, url_helpers, @block, strict
     end
   end
 end
@@ -397,6 +409,7 @@ def jruby_skip(message = '')
 end
 
 require 'mocha/setup' # FIXME: stop using mocha
+require 'minitest/mock'
 
 class ForkingExecutor
   class Server
