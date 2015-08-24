@@ -6,35 +6,17 @@ module ActionDispatch
     # read a notice you put there or <tt>flash["notice"] = "hello"</tt>
     # to put a new one.
     def flash
-<<<<<<< HEAD
-      @flash ||= Flash::FlashHash.from_session_value(session["flash"])
-||||||| merged common ancestors
-      @env[Flash::KEY] ||= Flash::FlashHash.from_session_value(session["flash"])
-=======
       flash = flash_hash
       return flash if flash
       self.flash = Flash::FlashHash.from_session_value(session["flash"])
->>>>>>> master
     end
 
     def flash=(flash)
-<<<<<<< HEAD
-      env[Flash::KEY] = flash
-||||||| merged common ancestors
-      @env[Flash::KEY] = flash
-=======
       set_header Flash::KEY, flash
->>>>>>> master
     end
 
     def flash_hash # :nodoc:
-<<<<<<< HEAD
-      env[Flash::KEY]
-||||||| merged common ancestors
-      @env[Flash::KEY]
-=======
       get_header Flash::KEY
->>>>>>> master
     end
   end
 
