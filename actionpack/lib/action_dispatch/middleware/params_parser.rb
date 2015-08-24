@@ -35,7 +35,9 @@ module ActionDispatch
     end
 
     def start_request(request, res)
-      request.request_parameters = parse_formatted_parameters(request, @parsers)
+      parse_formatted_parameters(request, @parsers) do |params|
+        request.request_parameters = params
+      end
     end
 
     def finish_request(req, res)
@@ -47,7 +49,7 @@ module ActionDispatch
 
         strategy = parsers.fetch(request.content_mime_type) { return nil }
 
-        strategy.call(request.raw_post)
+        yield strategy.call(request.raw_post)
 
       rescue => e # JSON or Ruby code block errors
         logger(request).debug "Error occurred while parsing request parameters.\nContents:\n\n#{request.raw_post}"
