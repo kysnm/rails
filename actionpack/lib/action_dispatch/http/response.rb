@@ -56,7 +56,7 @@ module ActionDispatch # :nodoc:
     CONTENT_TYPE = "Content-Type".freeze
     SET_COOKIE   = "Set-Cookie".freeze
     LOCATION     = "Location".freeze
-    NO_CONTENT_CODES = [204, 304]
+    NO_CONTENT_CODES = [100, 101, 102, 204, 205, 304]
 
     cattr_accessor(:default_charset) { "utf-8" }
     cattr_accessor(:default_headers)
@@ -251,9 +251,6 @@ module ActionDispatch # :nodoc:
     end
 
     # The location header we'll be responding with.
-    def location
-      headers[LOCATION]
-    end
     alias_method :redirect_url, :location
 
     # Sets the location header we'll be responding with.
@@ -386,6 +383,7 @@ module ActionDispatch # :nodoc:
 
       if NO_CONTENT_CODES.include?(@status)
         header.delete CONTENT_TYPE
+        header.delete 'Content-Length'
         [status, header, []]
       else
         [status, header, RackBody.new(self)]

@@ -4,6 +4,7 @@ module RenderHtml
   class MinimalController < ActionController::Metal
     include AbstractController::Rendering
     include ActionController::Rendering
+    include ActionView::Rendering
 
     def index
       render html: "Hello World!"
@@ -179,7 +180,7 @@ module RenderHtml
 
     test "rendering from minimal controller returns response with text/html content type" do
       get "/render_html/minimal/index"
-      assert_content_type "text/html"
+      assert_content_type "text/html; charset=utf-8"
     end
 
     test "rendering from normal controller returns response with text/html content type" do

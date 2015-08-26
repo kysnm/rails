@@ -41,6 +41,8 @@ module Rails
     def env
       @_env ||= ActiveSupport::StringInquirer.new(ENV["RAILS_ENV"] || ENV["RACK_ENV"] || "test")
     end
+
+    def root; end;
   end
 end
 
@@ -119,19 +121,17 @@ class ActionDispatch::IntegrationTest < ActiveSupport::TestCase
   class DeadEndRoutes < ActionDispatch::Routing::RouteSet
     # Stub Rails dispatcher so it does not get controller references and
     # simply return the controller#action as Rack::Body.
-    class NullController
+    class NullController < ::ActionController::Metal
       def initialize(controller_name)
         @controller = controller_name
-        @action = nil
       end
 
-      def action(action_name)
-        @action = action_name
-        self
+      def make_response!(request)
+        self.class.make_response! request
       end
 
-      def call(env)
-        [200, {'Content-Type' => 'text/html'}, ["#{@controller}##{@action}"]]
+      def dispatch(action, req, res)
+        [200, {'Content-Type' => 'text/html'}, ["#{@controller}##{action}"]]
       end
     end
 
@@ -381,13 +381,11 @@ class ThreadsController  < ResourcesController; end
 class MessagesController < ResourcesController; end
 class CommentsController < ResourcesController; end
 class ReviewsController < ResourcesController; end
-class LogosController < ResourcesController; end
 
 class AccountsController <  ResourcesController; end
 class AdminController   <  ResourcesController; end
 class ProductsController < ResourcesController; end
 class ImagesController < ResourcesController; end
-class PreferencesController < ResourcesController; end
 
 module Backoffice
   class ProductsController < ResourcesController; end
@@ -409,7 +407,7 @@ def jruby_skip(message = '')
 end
 
 require 'mocha/setup' # FIXME: stop using mocha
-require 'minitest/mock'
+require 'active_support/testing/method_call_assertions'
 
 class ForkingExecutor
   class Server
@@ -480,4 +478,8 @@ end
 if RUBY_ENGINE == "ruby" && PROCESS_COUNT > 0
   # Use N processes (N defaults to 4)
   Minitest.parallel_executor = ForkingExecutor.new(PROCESS_COUNT)
+end
+
+class ActiveSupport::TestCase
+  include ActiveSupport::Testing::MethodCallAssertions
 end
