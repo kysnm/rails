@@ -141,6 +141,11 @@ module ActionDispatch # :nodoc:
       yield self if block_given?
     end
 
+    def have_header?(key);  headers.key? key;   end
+    def get_header(key);    headers[key];       end
+    def set_header(key, v); headers[key] = v;   end
+    def delete_header(key); headers.delete key; end
+
     def await_commit
       synchronize do
         @cv.wait_until { @committed }
@@ -242,21 +247,8 @@ module ActionDispatch # :nodoc:
       parts
     end
 
-    def set_cookie(key, value)
-      ::Rack::Utils.set_cookie_header!(header, key, value)
-    end
-
-    def delete_cookie(key, value={})
-      ::Rack::Utils.delete_cookie_header!(header, key, value)
-    end
-
     # The location header we'll be responding with.
     alias_method :redirect_url, :location
-
-    # Sets the location header we'll be responding with.
-    def location=(url)
-      headers[LOCATION] = url
-    end
 
     def close
       stream.close if stream.respond_to?(:close)
@@ -288,7 +280,7 @@ module ActionDispatch # :nodoc:
     #   assert_equal 'AuthorOfNewPage', r.cookies['author']
     def cookies
       cookies = {}
-      if header = self[SET_COOKIE]
+      if header = get_header(SET_COOKIE)
         header = header.split("\n") if header.respond_to?(:to_str)
         header.each do |cookie|
           if pair = cookie.split(';').first
@@ -328,14 +320,14 @@ module ActionDispatch # :nodoc:
     end
 
     def assign_default_content_type_and_charset!
-      return if self[CONTENT_TYPE].present?
+      return if get_header(CONTENT_TYPE).present?
 
       @content_type ||= Mime::HTML
 
       type = @content_type.to_s.dup
       type << "; charset=#{charset}" if append_charset?
 
-      self[CONTENT_TYPE] = type
+      set_header CONTENT_TYPE, type
     end
 
     def append_charset?
@@ -379,8 +371,6 @@ module ActionDispatch # :nodoc:
     end
 
     def rack_response(status, header)
-      header[SET_COOKIE] = header[SET_COOKIE].join("\n") if header[SET_COOKIE].respond_to?(:join)
-
       if NO_CONTENT_CODES.include?(@status)
         header.delete CONTENT_TYPE
         header.delete 'Content-Length'
