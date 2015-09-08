@@ -70,7 +70,7 @@ module ActionController
           self.content_type = ENCODER.content_type
           data = ENCODER.build_multipart non_path_parameters
         else
-          get_header('CONTENT_TYPE') do |k|
+          fetch_header('CONTENT_TYPE') do |k|
             set_header k, 'application/x-www-form-urlencoded'
           end
 
@@ -98,7 +98,7 @@ module ActionController
         set_header 'rack.input', StringIO.new(data)
       end
 
-      get_header("PATH_INFO") do |k|
+      fetch_header("PATH_INFO") do |k|
         set_header k, generated_path
       end
       path_parameters[:controller] = controller_path
@@ -149,7 +149,7 @@ module ActionController
   # Methods #destroy and #load! are overridden to avoid calling methods on the
   # @store object, which does not exist for the TestSession class.
   class TestSession < Rack::Session::Abstract::SessionHash #:nodoc:
-    DEFAULT_OPTIONS = Rack::Session::Abstract::ID::DEFAULT_OPTIONS
+    DEFAULT_OPTIONS = Rack::Session::Abstract::Persisted::DEFAULT_OPTIONS
 
     def initialize(session = {})
       super(nil, nil)
@@ -476,6 +476,7 @@ module ActionController
         end
 
         self.cookies.update @request.cookies
+        self.cookies.update_cookies_from_jar
         @request.set_header 'HTTP_COOKIE', cookies.to_header
         @request.delete_header 'action_dispatch.cookies'
 
@@ -499,7 +500,7 @@ module ActionController
 
         if xhr
           @request.set_header 'HTTP_X_REQUESTED_WITH', 'XMLHttpRequest'
-          @request.get_header('HTTP_ACCEPT') do |k|
+          @request.fetch_header('HTTP_ACCEPT') do |k|
             @request.set_header k, [Mime::JS, Mime::HTML, Mime::XML, 'text/xml', Mime::ALL].join(', ')
           end
         end
@@ -507,7 +508,7 @@ module ActionController
         @controller.request  = @request
         @controller.response = @response
 
-        @request.get_header("SCRIPT_NAME") do |k|
+        @request.fetch_header("SCRIPT_NAME") do |k|
           @request.set_header k, @controller.config.relative_url_root
         end
 

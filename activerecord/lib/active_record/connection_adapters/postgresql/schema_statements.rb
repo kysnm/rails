@@ -68,7 +68,7 @@ module ActiveRecord
           execute "DROP DATABASE IF EXISTS #{quote_table_name(name)}"
         end
 
-        # Returns the list of all tables in the schema search path or a specified schema.
+        # Returns the list of all tables in the schema search path.
         def tables(name = nil)
           select_values("SELECT tablename FROM pg_tables WHERE schemaname = ANY(current_schemas(false))", 'SCHEMA')
         end
@@ -101,15 +101,19 @@ module ActiveRecord
 
         # Verifies existence of an index with a given name.
         def index_name_exists?(table_name, index_name, default)
+          table = Utils.extract_schema_qualified_name(table_name.to_s)
+          index = Utils.extract_schema_qualified_name(index_name.to_s)
+
           select_value(<<-SQL, 'SCHEMA').to_i > 0
             SELECT COUNT(*)
             FROM pg_class t
             INNER JOIN pg_index d ON t.oid = d.indrelid
             INNER JOIN pg_class i ON d.indexrelid = i.oid
+            LEFT JOIN pg_namespace n ON n.oid = i.relnamespace
             WHERE i.relkind = 'i'
-              AND i.relname = '#{index_name}'
-              AND t.relname = '#{table_name}'
-              AND i.relnamespace IN (SELECT oid FROM pg_namespace WHERE nspname = ANY (current_schemas(false)) )
+              AND i.relname = '#{index.identifier}'
+              AND t.relname = '#{table.identifier}'
+              AND n.nspname = #{index.schema ? "'#{index.schema}'" : 'ANY (current_schemas(false))'}
           SQL
         end
 
@@ -210,12 +214,12 @@ module ActiveRecord
 
         # Creates a schema for the given schema name.
         def create_schema schema_name
-          execute "CREATE SCHEMA #{schema_name}"
+          execute "CREATE SCHEMA #{quote_schema_name(schema_name)}"
         end
 
         # Drops the schema for the given schema name.
-        def drop_schema schema_name
-          execute "DROP SCHEMA #{schema_name} CASCADE"
+        def drop_schema(schema_name, options = {})
+          execute "DROP SCHEMA#{' IF EXISTS' if options[:if_exists]} #{quote_schema_name(schema_name)} CASCADE"
         end
 
         # Sets the schema search path to a string of comma-separated schema names.
@@ -376,7 +380,7 @@ module ActiveRecord
             new_seq = "#{new_name}_#{pk}_seq"
             idx = "#{table_name}_pkey"
             new_idx = "#{new_name}_pkey"
-            execute "ALTER TABLE #{quote_table_name(seq)} RENAME TO #{quote_table_name(new_seq)}"
+            execute "ALTER TABLE #{seq.quoted} RENAME TO #{quote_table_name(new_seq)}"
             execute "ALTER INDEX #{quote_table_name(idx)} RENAME TO #{quote_table_name(new_idx)}"
           end
 
@@ -447,8 +451,15 @@ module ActiveRecord
           execute "CREATE #{index_type} INDEX #{index_algorithm} #{quote_column_name(index_name)} ON #{quote_table_name(table_name)} #{index_using} (#{index_columns})#{index_options}"
         end
 
-        def remove_index!(table_name, index_name) #:nodoc:
-          execute "DROP INDEX #{quote_table_name(index_name)}"
+        def remove_index(table_name, options = {}) #:nodoc:
+          index_name = index_name_for_remove(table_name, options)
+          algorithm =
+            if Hash === options && options.key?(:algorithm)
+              index_algorithms.fetch(options[:algorithm]) do
+                raise ArgumentError.new("Algorithm must be one of the following: #{index_algorithms.keys.map(&:inspect).join(', ')}")
+              end
+            end
+          execute "DROP INDEX #{algorithm} #{quote_table_name(index_name)}"
         end
 
         # Renames an index of a table. Raises error if length of new

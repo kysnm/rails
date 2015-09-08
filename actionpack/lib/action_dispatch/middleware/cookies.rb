@@ -6,7 +6,7 @@ require 'active_support/json'
 module ActionDispatch
   class EngineRequest < SimpleDelegator
     def cookie_jar
-      get_header('action_dispatch.cookies'.freeze) do
+      fetch_header('action_dispatch.cookies'.freeze) do
         self.cookie_jar = Cookies::CookieJar.build(self, cookies)
       end
     end
@@ -318,6 +318,13 @@ module ActionDispatch
       def update(other_hash)
         @cookies.update other_hash.stringify_keys
         self
+      end
+
+      def update_cookies_from_jar
+        request_jar = @request.cookie_jar.instance_variable_get(:@cookies)
+        set_cookies = request_jar.reject { |k,_| @delete_cookies.key?(k) }
+
+        @cookies.update set_cookies if set_cookies
       end
 
       def to_header

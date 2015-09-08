@@ -240,19 +240,58 @@ module ActionController
       self
     end
 
-    # Ensures that a parameter is present. If it's present, returns
-    # the parameter at the given +key+, otherwise raises an
-    # <tt>ActionController::ParameterMissing</tt> error.
+    # This method accepts both a single key and an array of keys.
+    #
+    # When passed a single key, if it exists and its associated value is
+    # either present or the singleton +false+, returns said value:
     #
     #   ActionController::Parameters.new(person: { name: 'Francesco' }).require(:person)
     #   # => {"name"=>"Francesco"}
     #
+    # Otherwise raises <tt>ActionController::ParameterMissing</tt>:
+    #
+    #   ActionController::Parameters.new.require(:person)
+    #   # ActionController::ParameterMissing: param is missing or the value is empty: person
+    #
     #   ActionController::Parameters.new(person: nil).require(:person)
-    #   # => ActionController::ParameterMissing: param is missing or the value is empty: person
+    #   # ActionController::ParameterMissing: param is missing or the value is empty: person
+    #
+    #   ActionController::Parameters.new(person: "\t").require(:person)
+    #   # ActionController::ParameterMissing: param is missing or the value is empty: person
     #
     #   ActionController::Parameters.new(person: {}).require(:person)
-    #   # => ActionController::ParameterMissing: param is missing or the value is empty: person
+    #   # ActionController::ParameterMissing: param is missing or the value is empty: person
+    #
+    # When given an array of keys, the method tries to require each one of them
+    # in order. If it succeeds, an array with the respective return values is
+    # returned:
+    #
+    #   params = ActionController::Parameters.new(user: { ... }, profile: { ... })
+    #   user_params, profile_params = params.require(:user, :profile)
+    #
+    # Otherwise, the method reraises the first exception found:
+    #
+    #   params = ActionController::Parameters.new(user: {}, profile: {})
+    #   user_params, profile_params = params.require(:user, :profile)
+    #   # ActionController::ParameterMissing: param is missing or the value is empty: user
+    #
+    # Technically this method can be used to fetch terminal values:
+    #
+    #   # CAREFUL
+    #   params = ActionController::Parameters.new(person: { name: 'Finn' })
+    #   name = params.require(:person).require(:name) # CAREFUL
+    #
+    # but take into account that at some point those ones have to be permitted:
+    #
+    #   def person_params
+    #     params.require(:person).permit(:name).tap do |person_params|
+    #       person_params.require(:name) # SAFER
+    #     end
+    #   end
+    #
+    # for example.
     def require(key)
+      return key.map { |k| require(k) } if key.is_a?(Array)
       value = self[key]
       if value.present? || value == false
         value

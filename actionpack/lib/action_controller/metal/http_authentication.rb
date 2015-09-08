@@ -203,7 +203,7 @@ module ActionController
           password = password_procedure.call(credentials[:username])
           return false unless password
 
-          method = request.env['rack.methodoverride.original_method'] || request.env['REQUEST_METHOD']
+          method = request.get_header('rack.methodoverride.original_method') || request.get_header('REQUEST_METHOD')
           uri    = credentials[:uri]
 
           [true, false].any? do |trailing_question_mark|
@@ -260,8 +260,8 @@ module ActionController
       end
 
       def secret_token(request)
-        key_generator  = request.env["action_dispatch.key_generator"]
-        http_auth_salt = request.env["action_dispatch.http_auth_salt"]
+        key_generator  = request.key_generator
+        http_auth_salt = request.http_auth_salt
         key_generator.generate_key(http_auth_salt)
       end
 
