@@ -231,7 +231,7 @@ module ActiveRecord
   # * <tt>remove_index(table_name, name: index_name)</tt>: Removes the index
   #   specified by +index_name+.
   # * <tt>add_reference(:table_name, :reference_name)</tt>: Adds a new column
-  #   +reference_name_id+ by default a integer. See
+  #   +reference_name_id+ by default an integer. See
   #   ActiveRecord::ConnectionAdapters::SchemaStatements#add_reference for details.
   #
   # == Irreversible transformations
@@ -941,10 +941,6 @@ module ActiveRecord
         migrations(migrations_paths).any?
       end
 
-      def last_version
-        last_migration.version
-      end
-
       def last_migration #:nodoc:
         migrations(migrations_paths).last || NullMigration.new
       end
@@ -953,10 +949,6 @@ module ActiveRecord
         @migrations_paths ||= ['db/migrate']
         # just to not break things if someone uses: migration_path = some_string
         Array(@migrations_paths)
-      end
-
-      def migrations_path
-        migrations_paths.first
       end
 
       def migrations(paths)

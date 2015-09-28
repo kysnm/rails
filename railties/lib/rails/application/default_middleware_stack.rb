@@ -72,7 +72,6 @@ module Rails
             middleware.use_event ::ActionDispatch::Flash
           end
 
-          middleware.use_event ::ActionDispatch::ParamsParser
           middleware.use ::Rack::Head
           middleware.use ::Rack::ConditionalGet
           middleware.use ::Rack::ETag, "no-cache"

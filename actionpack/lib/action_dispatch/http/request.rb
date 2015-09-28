@@ -326,7 +326,7 @@ module ActionDispatch
       else
         self.session = {}
       end
-      set_header('action_dispatch.request.flash_hash', nil)
+      self.flash = nil
     end
 
     def session=(session) #:nodoc:
@@ -350,8 +350,14 @@ module ActionDispatch
     # Override Rack's POST method to support indifferent access
     def POST
       fetch_header("action_dispatch.request.request_parameters") do
-        self.request_parameters = Request::Utils.normalize_encode_params(super || {})
+        pr = parse_formatted_parameters(params_parsers) do |params|
+          super || {}
+        end
+        self.request_parameters = Request::Utils.normalize_encode_params(pr)
       end
+    rescue ParamsParser::ParseError # one of the parse strategies blew up
+      self.request_parameters = Request::Utils.normalize_encode_params(super || {})
+      raise
     rescue Rack::Utils::ParameterTypeError, Rack::Utils::InvalidParameterError => e
       raise ActionController::BadRequest.new(:request, e)
     end
@@ -378,6 +384,9 @@ module ActionDispatch
 
     def logger
       get_header("action_dispatch.logger".freeze)
+    end
+
+    def commit_flash
     end
 
     private

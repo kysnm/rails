@@ -57,6 +57,40 @@ module ActionDispatch
   class Flash
     KEY = 'action_dispatch.request.flash_hash'.freeze
 
+    module RequestMethods
+      # Access the contents of the flash. Use <tt>flash["notice"]</tt> to
+      # read a notice you put there or <tt>flash["notice"] = "hello"</tt>
+      # to put a new one.
+      def flash
+        flash = flash_hash
+        return flash if flash
+        self.flash = Flash::FlashHash.from_session_value(session["flash"])
+      end
+
+      def flash=(flash)
+        set_header Flash::KEY, flash
+      end
+
+      def flash_hash # :nodoc:
+        get_header Flash::KEY
+      end
+
+      def commit_flash # :nodoc:
+        session    = self.session || {}
+        flash_hash = self.flash_hash
+
+        if flash_hash && (flash_hash.present? || session.key?('flash'))
+          session["flash"] = flash_hash.to_session_value
+          self.flash = flash_hash.dup
+        end
+
+        if (!session.respond_to?(:loaded?) || session.loaded?) && # (reset_session uses {}, which doesn't implement #loaded?)
+            session.key?('flash') && session['flash'].nil?
+          session.delete('flash')
+        end
+      end
+    end
+
     class FlashNow #:nodoc:
       attr_accessor :flash
 
@@ -278,11 +312,12 @@ module ActionDispatch
         session["flash"] = flash_hash.to_session_value
         req.flash = flash_hash.dup
       end
-
-      if (!session.respond_to?(:loaded?) || session.loaded?) && # (reset_session uses {}, which doesn't implement #loaded?)
-        session.key?('flash') && session['flash'].nil?
-        session.delete('flash')
-      end
     end
+
+    def self.new(app) app; end
+  end
+
+  class Request
+    prepend Flash::RequestMethods
   end
 end

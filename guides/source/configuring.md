@@ -214,7 +214,6 @@ Every Rails application comes with a standard set of middleware which it uses in
 * `ActionDispatch::Cookies` sets cookies for the request.
 * `ActionDispatch::Session::CookieStore` is responsible for storing the session in cookies. An alternate middleware can be used for this by changing the `config.action_controller.session_store` to an alternate value. Additionally, options passed to this can be configured by using `config.action_controller.session_options`.
 * `ActionDispatch::Flash` sets up the `flash` keys. Only available if `config.action_controller.session_store` is set to a value.
-* `ActionDispatch::ParamsParser` parses out parameters from the request into `params`.
 * `Rack::MethodOverride` allows the method to be overridden if `params[:_method]` is set. This is the middleware which supports the PATCH, PUT, and DELETE HTTP method types.
 * `Rack::Head` converts HEAD requests to GET requests and serves them as so.
 
@@ -642,7 +641,7 @@ TIP: You don't have to update the database configurations manually. If you look 
 
 ### Connection Preference
 
-Since there are two ways to set your connection, via environment variable it is important to understand how the two can interact.
+Since there are two ways to configure your connection (using `config/database.yml` or using an environment variable) it is important to understand how they can interact.
 
 If you have an empty `config/database.yml` file but your `ENV['DATABASE_URL']` is present, then Rails will connect to the database via your environment variable:
 
