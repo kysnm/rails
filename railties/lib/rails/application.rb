@@ -511,5 +511,11 @@ module Rails
         end
       end
     end
+
+    private
+
+    def build_middleware
+      config.app_middleware + super
+    end
   end
 end
