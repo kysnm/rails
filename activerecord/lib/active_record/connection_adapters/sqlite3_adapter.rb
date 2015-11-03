@@ -89,6 +89,7 @@ module ActiveRecord
 
         if self.class.type_cast_config_to_boolean(config.fetch(:prepared_statements) { true })
           @prepared_statements = true
+          @visitor.extend(DetermineIfPreparableVisitor)
         else
           @prepared_statements = false
         end
@@ -218,7 +219,7 @@ module ActiveRecord
       end
 
       class ExplainPrettyPrinter
-        # Pretty prints the result of a EXPLAIN QUERY PLAN in a way that resembles
+        # Pretty prints the result of an EXPLAIN QUERY PLAN in a way that resembles
         # the output of the SQLite shell:
         #
         #   0|0|0|SEARCH TABLE users USING INTEGER PRIMARY KEY (rowid=?) (~1 rows)
@@ -231,15 +232,18 @@ module ActiveRecord
         end
       end
 
-      def exec_query(sql, name = nil, binds = [])
+      def exec_query(sql, name = nil, binds = [], prepare: false)
         type_casted_binds = binds.map { |attr| type_cast(attr.value_for_database) }
 
         log(sql, name, binds) do
           # Don't cache statements if they are not prepared
-          if without_prepared_statement?(binds)
+          unless prepare
             stmt    = @connection.prepare(sql)
             begin
               cols    = stmt.columns
+              unless without_prepared_statement?(binds)
+                stmt.bind_params(type_casted_binds)
+              end
               records = stmt.to_a
             ensure
               stmt.close
@@ -252,7 +256,7 @@ module ActiveRecord
             stmt = cache[:stmt]
             cols = cache[:cols] ||= stmt.columns
             stmt.reset!
-            stmt.bind_params type_casted_binds
+            stmt.bind_params(type_casted_binds)
           end
 
           ActiveRecord::Result.new(cols, stmt.to_a)
@@ -307,22 +311,18 @@ module ActiveRecord
 
       # SCHEMA STATEMENTS ========================================
 
-      def tables(name = nil, table_name = nil) #:nodoc:
-        sql = <<-SQL
-          SELECT name
-          FROM sqlite_master
-          WHERE (type = 'table' OR type = 'view') AND NOT name = 'sqlite_sequence'
-        SQL
-        sql << " AND name = #{quote_table_name(table_name)}" if table_name
-
-        exec_query(sql, 'SCHEMA').map do |row|
-          row['name']
-        end
+      def tables(name = nil) # :nodoc:
+        select_values("SELECT name FROM sqlite_master WHERE type IN ('table','view') AND name <> 'sqlite_sequence'", 'SCHEMA')
       end
       alias data_sources tables
 
       def table_exists?(table_name)
-        table_name && tables(nil, table_name).any?
+        return false unless table_name.present?
+
+        sql = "SELECT name FROM sqlite_master WHERE type IN ('table','view') AND name <> 'sqlite_sequence'"
+        sql << " AND name = #{quote(table_name)}"
+
+        select_values(sql, 'SCHEMA').any?
       end
       alias data_source_exists? table_exists?
 

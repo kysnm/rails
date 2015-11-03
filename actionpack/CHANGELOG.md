@@ -1,3 +1,57 @@
+*   Catch invalid UTF-8 querystring values and respond with BadRequest
+
+    Check querystring params for invalid UTF-8 characters, and raise an
+    ActionController::BadRequest error if present. Previously these strings
+    would typically trigger errors further down the stack.
+
+    *Grey Baker*
+
+*   Parse RSS/ATOM responses as XML, not HTML.
+
+    *Alexander Kaupanin*
+
+*   Show helpful message in `BadRequest` exceptions due to invalid path
+    parameter encodings.
+
+    Fixes #21923.
+
+    *Agis Anastasopoulos*
+
+*   Deprecate `config.static_cache_control` in favor of
+    `config.public_file_server.headers`
+
+    *Yuki Nishijima*
+
+*   Add the ability of returning arbitrary headers to ActionDispatch::Static
+
+    Now ActionDispatch::Static can accept HTTP headers so that developers
+    will have control of returning arbitrary headers like
+    'Access-Control-Allow-Origin' when a response is delivered. They can be
+    configured with `#config`:
+
+      config.public_file_server.headers = {
+        "Cache-Control"               => "public, max-age=60",
+        "Access-Control-Allow-Origin" => "http://rubyonrails.org"
+      }
+
+    *Yuki Nishijima*
+
+*   Allow multiple `root` routes in same scope level. Example:
+
+    ```ruby
+    root 'blog#show', constraints: ->(req) { Hostname.blog_site?(req.host) }
+    root 'landing#show'
+    ```
+    *Rafael Sales*
+
+*   Fix regression in mounted engine named routes generation for app deployed to
+    a subdirectory. `relative_url_root` was prepended to the path twice (e.g.
+    "/subdir/subdir/engine_path" instead of "/subdir/engine_path")
+
+    Fixes #20920. Fixes #21459.
+
+    *Matthew Erhard*
+
 *   ActionDispatch::Response#new no longer applies default headers.  If you want
     default headers applied to the response object, then call
     `ActionDispatch::Response.create`.  This change only impacts people who are
@@ -10,11 +64,15 @@
 
     To this:
 
-      Mime::Type[:HTML]
+      Mime[:html]
 
     This change is so that Rails will not manage a list of constants, and fixes
     an issue where if a type isn't registered you could possibly get the wrong
     object.
+
+    `Mime[:html]` is available in older versions of Rails, too, so you can
+    safely change libraries and plugins and maintain compatibility with
+    multiple versions of Rails.
 
 *   `url_for` does not modify its arguments when generating polymorphic URLs.
 

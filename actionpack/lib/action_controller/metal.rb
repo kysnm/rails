@@ -1,6 +1,5 @@
 require 'active_support/core_ext/array/extract_options'
 require 'action_dispatch/middleware/stack'
-require 'active_support/deprecation'
 require 'action_dispatch/http/request'
 require 'action_dispatch/http/response'
 
@@ -174,7 +173,11 @@ module ActionController
 
     def response_body=(body)
       body = [body] unless body.nil? || body.respond_to?(:each)
-      response.body = body
+      response.reset_body!
+      body.each { |part|
+        next if part.empty?
+        response.write part
+      }
       super
     end
 

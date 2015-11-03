@@ -1,3 +1,21 @@
+*   Route generator should be idempotent
+    running generators several times no longer require you to cleanup routes.rb
+
+    *Thiago Pinto*
+*   Allow passing an environment to `config_for`.
+
+    *Simon Eskildsen*
+
+*   Allow rake:stats to account for rake tasks in lib/tasks
+
+    *Kevin Deisz*
+
+*   Added javascript to update the URL on mailer previews with the currently
+    selected email format. Reloading the page now keeps you on your selected
+    format rather than going back to the default html version.
+
+    *James Kerr*
+
 *   Add fail fast to `bin/rails test`
 
     Adding `--fail-fast` or `-f` when running tests will interrupt the run on
@@ -296,10 +314,11 @@
 
     Newly generated Rails apps have a new initializer called
     `callback_terminator.rb` which sets the value of the configuration option
-    `config.active_support.halt_callback_chains_on_return_false` to `false`.
+    `ActiveSupport.halt_callback_chains_on_return_false` to `false`.
 
-    As a result, new Rails apps do not halt callback chains when a callback
-    returns `false`; only when they are explicitly halted with `throw(:abort)`.
+    As a result, new Rails apps do not halt Active Record and Active Model
+    callback chains when a callback returns `false`; only when they are
+    explicitly halted with `throw(:abort)`.
 
     The terminator is *not* added when running `rake rails:update`, so returning
     `false` will still work on old apps ported to Rails 5, displaying a

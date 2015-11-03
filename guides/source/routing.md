@@ -79,7 +79,7 @@ it asks the router to map it to a controller action. If the first matching route
 resources :photos
 ```
 
-Rails would dispatch that request to the `destroy` method on the `photos` controller with `{ id: '17' }` in `params`.
+Rails would dispatch that request to the `destroy` action on the `photos` controller with `{ id: '17' }` in `params`.
 
 ### CRUD, Verbs, and Actions
 
@@ -1096,7 +1096,7 @@ Video.find_by(identifier: params[:identifier])
 ```
 
 You can override `ActiveRecord::Base#to_param` of a related model to construct
-an URL:
+a URL:
 
 ```ruby
 class Video < ActiveRecord::Base

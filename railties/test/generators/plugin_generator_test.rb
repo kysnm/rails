@@ -60,6 +60,7 @@ class PluginGeneratorTest < Rails::Generators::TestCase
     run_generator
     assert_file "README.rdoc", /Bukkits/
     assert_no_file "config/routes.rb"
+    assert_no_file "app/assets/config/bukkits_manifest.js"
     assert_file "test/test_helper.rb" do |content|
       assert_match(/require.+test\/dummy\/config\/environment/, content)
       assert_match(/ActiveRecord::Migrator\.migrations_paths.+test\/dummy\/db\/migrate/, content)
@@ -303,6 +304,7 @@ class PluginGeneratorTest < Rails::Generators::TestCase
     assert_file "lib/bukkits/engine.rb", /isolate_namespace Bukkits/
     assert_file "test/dummy/config/routes.rb", /mount Bukkits::Engine => "\/bukkits"/
     assert_file "app/controllers/bukkits/application_controller.rb", /module Bukkits\n  class ApplicationController < ActionController::Base/
+    assert_file "app/jobs/bukkits/application_job.rb", /module Bukkits\n  class ApplicationJob < ActiveJob::Base/
     assert_file "app/helpers/bukkits/application_helper.rb", /module Bukkits\n  module ApplicationHelper/
     assert_file "app/views/layouts/bukkits/application.html.erb" do |contents|
       assert_match "<title>Bukkits</title>", contents
@@ -327,6 +329,7 @@ class PluginGeneratorTest < Rails::Generators::TestCase
     assert_file "hyphenated-name/lib/hyphenated/name.rb",                                    /require "hyphenated\/name\/engine"/
     assert_file "hyphenated-name/test/dummy/config/routes.rb",                               /mount Hyphenated::Name::Engine => "\/hyphenated-name"/
     assert_file "hyphenated-name/app/controllers/hyphenated/name/application_controller.rb", /module Hyphenated\n  module Name\n    class ApplicationController < ActionController::Base\n    end\n  end\nend/
+    assert_file "hyphenated-name/app/jobs/hyphenated/name/application_job.rb", /module Hyphenated\n  module Name\n    class ApplicationJob < ActiveJob::Base/
     assert_file "hyphenated-name/app/helpers/hyphenated/name/application_helper.rb",         /module Hyphenated\n  module Name\n    module ApplicationHelper\n    end\n  end\nend/
     assert_file "hyphenated-name/app/views/layouts/hyphenated/name/application.html.erb" do |contents|
       assert_match "<title>Hyphenated name</title>", contents
@@ -346,6 +349,7 @@ class PluginGeneratorTest < Rails::Generators::TestCase
     assert_file "my_hyphenated-name/lib/my_hyphenated/name.rb",                                    /require "my_hyphenated\/name\/engine"/
     assert_file "my_hyphenated-name/test/dummy/config/routes.rb",                                  /mount MyHyphenated::Name::Engine => "\/my_hyphenated-name"/
     assert_file "my_hyphenated-name/app/controllers/my_hyphenated/name/application_controller.rb", /module MyHyphenated\n  module Name\n    class ApplicationController < ActionController::Base\n    end\n  end\nend/
+    assert_file "my_hyphenated-name/app/jobs/my_hyphenated/name/application_job.rb", /module MyHyphenated\n  module Name\n    class ApplicationJob < ActiveJob::Base/
     assert_file "my_hyphenated-name/app/helpers/my_hyphenated/name/application_helper.rb",         /module MyHyphenated\n  module Name\n    module ApplicationHelper\n    end\n  end\nend/
     assert_file "my_hyphenated-name/app/views/layouts/my_hyphenated/name/application.html.erb" do |contents|
       assert_match "<title>My hyphenated name</title>", contents
@@ -365,6 +369,7 @@ class PluginGeneratorTest < Rails::Generators::TestCase
     assert_file "deep-hyphenated-name/lib/deep/hyphenated/name.rb",                                    /require "deep\/hyphenated\/name\/engine"/
     assert_file "deep-hyphenated-name/test/dummy/config/routes.rb",                                    /mount Deep::Hyphenated::Name::Engine => "\/deep-hyphenated-name"/
     assert_file "deep-hyphenated-name/app/controllers/deep/hyphenated/name/application_controller.rb", /module Deep\n  module Hyphenated\n    module Name\n      class ApplicationController < ActionController::Base\n      end\n    end\n  end\nend/
+    assert_file "deep-hyphenated-name/app/jobs/deep/hyphenated/name/application_job.rb", /module Deep\n  module Hyphenated\n    module Name\n      class ApplicationJob < ActiveJob::Base/
     assert_file "deep-hyphenated-name/app/helpers/deep/hyphenated/name/application_helper.rb",         /module Deep\n  module Hyphenated\n    module Name\n      module ApplicationHelper\n      end\n    end\n  end\nend/
     assert_file "deep-hyphenated-name/app/views/layouts/deep/hyphenated/name/application.html.erb" do |contents|
       assert_match "<title>Deep hyphenated name</title>", contents
@@ -433,6 +438,19 @@ class PluginGeneratorTest < Rails::Generators::TestCase
     assert_file ".gitignore" do |contents|
       assert_match(/spec\/dummy/, contents)
     end
+  end
+
+  def test_unnecessary_files_are_not_generated_in_dummy_application
+    run_generator
+    assert_no_file 'test/dummy/.gitignore'
+    assert_no_file 'test/dummy/db/seeds.rb'
+    assert_no_file 'test/dummy/Gemfile'
+    assert_no_file 'test/dummy/public/robots.txt'
+    assert_no_file 'test/dummy/README.md'
+    assert_no_directory 'test/dummy/lib/tasks'
+    assert_no_directory 'test/dummy/doc'
+    assert_no_directory 'test/dummy/test'
+    assert_no_directory 'test/dummy/vendor'
   end
 
   def test_skipping_test_files

@@ -207,6 +207,14 @@ ActiveRecord::Schema.define do
   add_index :companies, [:firm_id, :type], name: "company_partial_index", where: "rating > 10"
   add_index :companies, :name, name: 'company_name_index', using: :btree
 
+  create_table :content, force: true do |t|
+    t.string :title
+  end
+
+  create_table :content_positions, force: true do |t|
+    t.integer :content_id
+  end
+
   create_table :vegetables, force: true do |t|
     t.string :name
     t.integer :seller_id
@@ -253,6 +261,7 @@ ActiveRecord::Schema.define do
     t.string   :first_name
     t.integer  :salary, default: 70000
     t.integer :firm_id
+    t.integer :mentor_id
     if subsecond_precision_supported?
       t.datetime :created_at, precision: 6
       t.datetime :updated_at, precision: 6
@@ -345,6 +354,10 @@ ActiveRecord::Schema.define do
 
   create_table :guids, force: true do |t|
     t.column :key, :string
+  end
+
+  create_table :guitar, force: true do |t|
+    t.string :color
   end
 
   create_table :inept_wizards, force: true do |t|
@@ -449,6 +462,10 @@ ActiveRecord::Schema.define do
   end
 
   create_table :member_types, force: true do |t|
+    t.string :name
+  end
+
+  create_table :mentors, force: true do |t|
     t.string :name
   end
 
@@ -660,6 +677,7 @@ ActiveRecord::Schema.define do
     t.string :name
     t.string :type
     t.integer :firm_id
+    t.integer :mentor_id
   end
 
   create_table :randomly_named_table1, force: true do |t|
@@ -843,6 +861,11 @@ ActiveRecord::Schema.define do
     t.column :looter_id, :integer
     t.column :looter_type, :string
     t.belongs_to :ship
+  end
+
+  create_table :tuning_pegs, force: true do |t|
+    t.integer :guitar_id
+    t.float :pitch
   end
 
   create_table :tyres, force: true do |t|

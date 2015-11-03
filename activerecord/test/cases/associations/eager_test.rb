@@ -24,6 +24,8 @@ require 'models/membership'
 require 'models/club'
 require 'models/categorization'
 require 'models/sponsor'
+require 'models/mentor'
+require 'models/contract'
 
 class EagerAssociationTest < ActiveRecord::TestCase
   fixtures :posts, :comments, :authors, :essays, :author_addresses, :categories, :categories_posts,
@@ -1177,6 +1179,24 @@ class EagerAssociationTest < ActiveRecord::TestCase
     assert_equal 1, mary.unique_categorized_post_ids.length
   end
 
+  def test_preloading_has_one_using_reorder
+    klass = Class.new(ActiveRecord::Base) do
+      def self.name; "TempAuthor"; end
+      self.table_name = "authors"
+      has_one :post, class_name: "PostWithDefaultScope", foreign_key: :author_id
+      has_one :reorderd_post, -> { reorder(title: :desc) }, class_name: "PostWithDefaultScope", foreign_key: :author_id
+    end
+
+    author = klass.first
+    # PRECONDITION: make sure ordering results in different results
+    assert_not_equal author.post, author.reorderd_post
+
+    preloaded_reorderd_post = klass.preload(:reorderd_post).first.reorderd_post
+
+    assert_equal author.reorderd_post, preloaded_reorderd_post
+    assert_equal Post.order(title: :desc).first.title, preloaded_reorderd_post.title
+  end
+
   def test_preloading_polymorphic_with_custom_foreign_type
     sponsor = sponsors(:moustache_club_sponsor_for_groucho)
     groucho = members(:groucho)
@@ -1201,12 +1221,6 @@ class EagerAssociationTest < ActiveRecord::TestCase
     end
   end
 
-  def test_join_eager_with_nil_order_should_generate_valid_sql
-    assert_nothing_raised(ActiveRecord::StatementInvalid) do
-      Post.includes(:comments).order(nil).where(:comments => {:body => "Thank you for the welcome"}).first
-    end
-  end
-
   def test_deep_including_through_habtm
     # warm up habtm cache
     posts = Post.all.merge!(:includes => {:categories => :categorizations}, :order => "posts.id").to_a
@@ -1216,6 +1230,16 @@ class EagerAssociationTest < ActiveRecord::TestCase
     assert_no_queries { assert_equal 2, posts[0].categories[0].categorizations.length }
     assert_no_queries { assert_equal 1, posts[0].categories[1].categorizations.length }
     assert_no_queries { assert_equal 2, posts[1].categories[0].categorizations.length }
+  end
+
+  def test_eager_load_multiple_associations_with_references
+    mentor = Mentor.create!(name: "Barış Can DAYLIK")
+    developer = Developer.create!(name: "Mehmet Emin İNAÇ", mentor: mentor)
+    Contract.create!(developer: developer)
+    project = Project.create!(name: "VNGRS", mentor: mentor)
+    project.developers << developer
+    projects = Project.references(:mentors).includes(mentor: { developers: :contracts }, developers: :contracts)
+    assert_equal projects.last.mentor.developers.first.contracts, projects.last.developers.last.contracts
   end
 
   test "scoping with a circular preload" do

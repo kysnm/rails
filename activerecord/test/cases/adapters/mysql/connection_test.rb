@@ -26,7 +26,7 @@ class MysqlConnectionTest < ActiveRecord::MysqlTestCase
       run_without_connection do
         ar_config = ARTest.connection_config['arunit']
 
-        url = "mysql://#{ar_config["username"]}@localhost/#{ar_config["database"]}"
+        url = "mysql://#{ar_config["username"]}:#{ar_config["password"]}@localhost/#{ar_config["database"]}"
         Klass.establish_connection(url)
         assert_equal ar_config['database'], Klass.connection.current_database
       end
@@ -118,15 +118,6 @@ class MysqlConnectionTest < ActiveRecord::MysqlTestCase
     end
   end
 
-  # Test that MySQL allows multiple results for stored procedures
-  if defined?(Mysql) && Mysql.const_defined?(:CLIENT_MULTI_RESULTS)
-    def test_multi_results
-      rows = ActiveRecord::Base.connection.select_rows('CALL ten();')
-      assert_equal 10, rows[0][0].to_i, "ten() did not return 10 as expected: #{rows.inspect}"
-      assert @connection.active?, "Bad connection use by 'MysqlAdapter.select_rows'"
-    end
-  end
-
   def test_mysql_connection_collation_is_configured
     assert_equal 'utf8_unicode_ci', @connection.show_variable('collation_connection')
     assert_equal 'utf8_general_ci', ARUnit2Model.connection.show_variable('collation_connection')
@@ -177,6 +168,34 @@ class MysqlConnectionTest < ActiveRecord::MysqlTestCase
       session_mode = ActiveRecord::Base.connection.exec_query "SELECT @@SESSION.DEFAULT_WEEK_FORMAT"
       assert_equal global_mode.rows, session_mode.rows
     end
+  end
+
+  def test_get_and_release_advisory_lock
+    key = "test_key"
+
+    got_lock = @connection.get_advisory_lock(key)
+    assert got_lock, "get_advisory_lock should have returned true but it didn't"
+
+    assert_equal test_lock_free(key), false,
+      "expected the test advisory lock to be held but it wasn't"
+
+    released_lock = @connection.release_advisory_lock(key)
+    assert released_lock, "expected release_advisory_lock to return true but it didn't"
+
+    assert test_lock_free(key), 'expected the test key to be available after releasing'
+  end
+
+  def test_release_non_existent_advisory_lock
+    fake_key = "fake_key"
+    released_non_existent_lock = @connection.release_advisory_lock(fake_key)
+    assert_equal released_non_existent_lock, false,
+      'expected release_advisory_lock to return false when there was no lock to release'
+  end
+
+  protected
+
+  def test_lock_free(key)
+    @connection.select_value("SELECT IS_FREE_LOCK('#{key}');") == '1'
   end
 
   private

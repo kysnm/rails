@@ -129,7 +129,7 @@ module ActiveRecord
       # Creates a new table with the name +table_name+. +table_name+ may either
       # be a String or a Symbol.
       #
-      # There are two ways to work with +create_table+. You can use the block
+      # There are two ways to work with #create_table. You can use the block
       # form or the regular form, like this:
       #
       # === Block form
@@ -161,7 +161,7 @@ module ActiveRecord
       # The +options+ hash can include the following keys:
       # [<tt>:id</tt>]
       #   Whether to automatically add a primary key column. Defaults to true.
-      #   Join tables for +has_and_belongs_to_many+ should set it to false.
+      #   Join tables for {ActiveRecord::Base.has_and_belongs_to_many}[rdoc-ref:Associations::ClassMethods#has_and_belongs_to_many] should set it to false.
       #
       #   A Symbol can be used to specify the type of the generated primary key column.
       # [<tt>:primary_key</tt>]
@@ -169,7 +169,8 @@ module ActiveRecord
       #   Defaults to +id+. If <tt>:id</tt> is false this option is ignored.
       #
       #   Note that Active Record models will automatically detect their
-      #   primary key. This can be avoided by using +self.primary_key=+ on the model
+      #   primary key. This can be avoided by using
+      #   {self.primary_key=}[rdoc-ref:AttributeMethods::PrimaryKey::ClassMethods#primary_key=] on the model
       #   to define the key explicitly.
       #
       # [<tt>:options</tt>]
@@ -296,7 +297,7 @@ module ActiveRecord
       #   Set to true to drop the table before creating it.
       #   Defaults to false.
       #
-      # Note that +create_join_table+ does not create any indices by default; you can use
+      # Note that #create_join_table does not create any indices by default; you can use
       # its block form to do so yourself:
       #
       #   create_join_table :products, :categories do |t|
@@ -331,11 +332,11 @@ module ActiveRecord
       end
 
       # Drops the join table specified by the given arguments.
-      # See +create_join_table+ for details.
+      # See #create_join_table for details.
       #
       # Although this command ignores the block if one is given, it can be helpful
       # to provide one in a migration's +change+ method so it can be reverted.
-      # In that case, the block will be used by create_join_table.
+      # In that case, the block will be used by #create_join_table.
       def drop_join_table(table_1, table_2, options = {})
         join_table_name = find_join_table_name(table_1, table_2, options)
         drop_table(join_table_name)
@@ -440,17 +441,86 @@ module ActiveRecord
       #
       # Although this command ignores most +options+ and the block if one is given,
       # it can be helpful to provide these in a migration's +change+ method so it can be reverted.
-      # In that case, +options+ and the block will be used by create_table.
+      # In that case, +options+ and the block will be used by #create_table.
       def drop_table(table_name, options = {})
         execute "DROP TABLE#{' IF EXISTS' if options[:if_exists]} #{quote_table_name(table_name)}"
       end
 
-      # Adds a new column to the named table.
-      # See TableDefinition#column for details of the options you can use.
+      # Add a new +type+ column named +column_name+ to +table_name+.
       #
-      # Note: Not all options will be available, generally this command should
-      # ignore most of them. In favor of doing a low-level call to simply
-      # create a column.
+      # The +type+ parameter is normally one of the migrations native types,
+      # which is one of the following:
+      # <tt>:primary_key</tt>, <tt>:string</tt>, <tt>:text</tt>,
+      # <tt>:integer</tt>, <tt>:bigint</tt>, <tt>:float</tt>, <tt>:decimal</tt>,
+      # <tt>:datetime</tt>, <tt>:time</tt>, <tt>:date</tt>,
+      # <tt>:binary</tt>, <tt>:boolean</tt>.
+      #
+      # You may use a type not in this list as long as it is supported by your
+      # database (for example, "polygon" in MySQL), but this will not be database
+      # agnostic and should usually be avoided.
+      #
+      # Available options are (none of these exists by default):
+      # * <tt>:limit</tt> -
+      #   Requests a maximum column length. This is number of characters for a <tt>:string</tt> column
+      #   and number of bytes for <tt>:text</tt>, <tt>:binary</tt> and <tt>:integer</tt> columns.
+      # * <tt>:default</tt> -
+      #   The column's default value. Use nil for NULL.
+      # * <tt>:null</tt> -
+      #   Allows or disallows +NULL+ values in the column. This option could
+      #   have been named <tt>:null_allowed</tt>.
+      # * <tt>:precision</tt> -
+      #   Specifies the precision for a <tt>:decimal</tt> column.
+      # * <tt>:scale</tt> -
+      #   Specifies the scale for a <tt>:decimal</tt> column.
+      #
+      # Note: The precision is the total number of significant digits
+      # and the scale is the number of digits that can be stored following
+      # the decimal point. For example, the number 123.45 has a precision of 5
+      # and a scale of 2. A decimal with a precision of 5 and a scale of 2 can
+      # range from -999.99 to 999.99.
+      #
+      # Please be aware of different RDBMS implementations behavior with
+      # <tt>:decimal</tt> columns:
+      # * The SQL standard says the default scale should be 0, <tt>:scale</tt> <=
+      #   <tt>:precision</tt>, and makes no comments about the requirements of
+      #   <tt>:precision</tt>.
+      # * MySQL: <tt>:precision</tt> [1..63], <tt>:scale</tt> [0..30].
+      #   Default is (10,0).
+      # * PostgreSQL: <tt>:precision</tt> [1..infinity],
+      #   <tt>:scale</tt> [0..infinity]. No default.
+      # * SQLite2: Any <tt>:precision</tt> and <tt>:scale</tt> may be used.
+      #   Internal storage as strings. No default.
+      # * SQLite3: No restrictions on <tt>:precision</tt> and <tt>:scale</tt>,
+      #   but the maximum supported <tt>:precision</tt> is 16. No default.
+      # * Oracle: <tt>:precision</tt> [1..38], <tt>:scale</tt> [-84..127].
+      #   Default is (38,0).
+      # * DB2: <tt>:precision</tt> [1..63], <tt>:scale</tt> [0..62].
+      #   Default unknown.
+      # * SqlServer?: <tt>:precision</tt> [1..38], <tt>:scale</tt> [0..38].
+      #   Default (38,0).
+      #
+      # == Examples
+      #
+      #  add_column(:users, :picture, :binary, limit: 2.megabytes)
+      #  # ALTER TABLE "users" ADD "picture" blob(2097152)
+      #
+      #  add_column(:articles, :status, :string, limit: 20, default: 'draft', null: false)
+      #  # ALTER TABLE "articles" ADD "status" varchar(20) DEFAULT 'draft' NOT NULL
+      #
+      #  add_column(:answers, :bill_gates_money, :decimal, precision: 15, scale: 2)
+      #  # ALTER TABLE "answers" ADD "bill_gates_money" decimal(15,2)
+      #
+      #  add_column(:measurements, :sensor_reading, :decimal, precision: 30, scale: 20)
+      #  # ALTER TABLE "measurements" ADD "sensor_reading" decimal(30,20)
+      #
+      #  # While :scale defaults to zero on most databases, it
+      #  # probably wouldn't hurt to include it.
+      #  add_column(:measurements, :huge_integer, :decimal, precision: 30)
+      #  # ALTER TABLE "measurements" ADD "huge_integer" decimal(30)
+      #
+      #  # Defines a column with a database-specific type.
+      #  add_column(:shapes, :triangle, 'polygon')
+      #  # ALTER TABLE "shapes" ADD "triangle" polygon
       def add_column(table_name, column_name, type, options = {})
         at = create_alter_table table_name
         at.add_column(column_name, type, options)
@@ -694,7 +764,7 @@ module ActiveRecord
       # Adds a reference. The reference column is an integer by default,
       # the <tt>:type</tt> option can be used to specify a different type.
       # Optionally adds a +_type+ column, if <tt>:polymorphic</tt> option is provided.
-      # <tt>add_reference</tt> and <tt>add_belongs_to</tt> are acceptable.
+      # #add_reference and #add_belongs_to are acceptable.
       #
       # The +options+ hash can include the following keys:
       # [<tt>:type</tt>]
@@ -702,9 +772,11 @@ module ActiveRecord
       # [<tt>:index</tt>]
       #   Add an appropriate index. Defaults to false.
       # [<tt>:foreign_key</tt>]
-      #   Add an appropriate foreign key. Defaults to false.
+      #   Add an appropriate foreign key constraint. Defaults to false.
       # [<tt>:polymorphic</tt>]
       #   Whether an additional +_type+ column should be added. Defaults to false.
+      # [<tt>:null</tt>]
+      #   Whether the column allows nulls. Defaults to true.
       #
       # ====== Create a user_id integer column
       #
@@ -722,13 +794,17 @@ module ActiveRecord
       #
       #   add_reference(:products, :supplier, foreign_key: true)
       #
+      # ====== Create a supplier_id column and a foreign key to the firms table
+      #
+      #   add_reference(:products, :supplier, foreign_key: {to_table: :firms})
+      #
       def add_reference(table_name, *args)
         ReferenceDefinition.new(*args).add_to(update_table_definition(table_name, self))
       end
       alias :add_belongs_to :add_reference
 
       # Removes the reference(s). Also removes a +type+ column if one exists.
-      # <tt>remove_reference</tt> and <tt>remove_belongs_to</tt> are acceptable.
+      # #remove_reference and #remove_belongs_to are acceptable.
       #
       # ====== Remove the reference
       #
@@ -754,7 +830,7 @@ module ActiveRecord
       alias :remove_belongs_to :remove_reference
 
       # Returns an array of foreign keys for the given table.
-      # The foreign keys are represented as +ForeignKeyDefinition+ objects.
+      # The foreign keys are represented as ForeignKeyDefinition objects.
       def foreign_keys(table_name)
         raise NotImplementedError, "foreign_keys is not implemented"
       end

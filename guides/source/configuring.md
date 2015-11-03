@@ -244,7 +244,7 @@ config.middleware.swap ActionController::Failsafe, Lifo::Failsafe
 They can also be removed from the stack completely:
 
 ```ruby
-config.middleware.delete "Rack::MethodOverride"
+config.middleware.delete Rack::MethodOverride
 ```
 
 ### Configuring i18n
@@ -304,12 +304,18 @@ All these configuration options are delegated to the `I18n` library.
   `:all` which always dumps all schemas regardless of the schema_search_path,
   or a string of comma separated schemas.
 
-* `config.active_record.belongs_to_required_by_default` is a boolean value and controls whether `belongs_to` association is required by default.
+* `config.active_record.belongs_to_required_by_default` is a boolean value and
+  controls whether a record fails validation if `belongs_to` association is not
+  present.
 
 * `config.active_record.warn_on_records_fetched_greater_than` allows setting a
   warning threshold for query result size. If the number of records returned
   by a query exceeds the threshold, a warning is logged. This can be used to
   identify queries which might be causing memory bloat.
+
+* `config.active_record.index_nested_attribute_errors` allows errors for nested
+  has_many relationships to be displayed with an index as well as the error.
+  Defaults to false.
 
 The MySQL adapter adds one additional configuration option:
 
@@ -535,7 +541,7 @@ There are a few configuration options available in Active Support:
 
 * `config.active_support.time_precision` sets the precision of JSON encoded time values. Defaults to `3`.
 
-* `config.active_support.halt_callback_chains_on_return_false` specifies whether ActiveRecord, ActiveModel and ActiveModel::Validations callback chains can be halted by returning `false` in a 'before' callback. Defaults to `true`.
+* `ActiveSupport.halt_callback_chains_on_return_false` specifies whether Active Record and Active Model callback chains can be halted by returning `false` in a 'before' callback. Defaults to `true`.
 
 * `ActiveSupport::Logger.silencer` is set to `false` to disable the ability to silence logging in a block. The default is `true`.
 

@@ -117,7 +117,7 @@ task default: :test
         remove_file "Gemfile"
         remove_file "lib/tasks"
         remove_file "public/robots.txt"
-        remove_file "README"
+        remove_file "README.md"
         remove_file "test"
         remove_file "vendor"
       end
@@ -226,7 +226,7 @@ task default: :test
       end
 
       def create_assets_manifest_file
-        build(:assets_manifest) unless api?
+        build(:assets_manifest) if !api? && engine?
       end
 
       def create_public_stylesheets_files
@@ -235,10 +235,6 @@ task default: :test
 
       def create_javascript_files
         build(:javascripts) unless api?
-      end
-
-      def create_images_directory
-        build(:images) unless api?
       end
 
       def create_bin_files

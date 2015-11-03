@@ -20,6 +20,10 @@ module ActiveRecord
       def self.table_name
         'fake_table'
       end
+
+      def self.sanitize_sql_for_order(sql)
+        sql
+      end
     end
 
     def test_construction
@@ -56,9 +60,6 @@ module ActiveRecord
 
     def test_empty_where_values_hash
       relation = Relation.new(FakeKlass, :b, nil)
-      assert_equal({}, relation.where_values_hash)
-
-      relation.where! :hello
       assert_equal({}, relation.where_values_hash)
     end
 
@@ -153,10 +154,10 @@ module ActiveRecord
     end
 
     test 'merging a hash into a relation' do
-      relation = Relation.new(FakeKlass, :b, nil)
-      relation = relation.merge where: :lol, readonly: true
+      relation = Relation.new(Post, Post.arel_table, Post.predicate_builder)
+      relation = relation.merge where: {name: :lol}, readonly: true
 
-      assert_equal Relation::WhereClause.new([:lol], []), relation.where_clause
+      assert_equal({"name"=>:lol}, relation.where_clause.to_h)
       assert_equal true, relation.readonly_value
     end
 
@@ -185,7 +186,7 @@ module ActiveRecord
     end
 
     test '#values returns a dup of the values' do
-      relation = Relation.new(FakeKlass, :b, nil).where! :foo
+      relation = Relation.new(Post, Post.arel_table, Post.predicate_builder).where!(name: :foo)
       values   = relation.values
 
       values[:where] = nil

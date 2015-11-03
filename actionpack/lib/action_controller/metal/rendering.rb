@@ -1,4 +1,3 @@
-require 'active_support/deprecation'
 require 'active_support/core_ext/string/filters'
 
 module ActionController
@@ -64,7 +63,7 @@ module ActionController
     end
 
     def _set_html_content_type
-      self.content_type = Mime::Type[:HTML].to_s
+      self.content_type = Mime[:html].to_s
     end
 
     def _set_rendered_content_type(format)

@@ -1,5 +1,4 @@
 require 'action_dispatch/journey'
-require 'forwardable'
 require 'active_support/concern'
 require 'active_support/core_ext/object/to_query'
 require 'active_support/core_ext/hash/slice'
@@ -656,14 +655,18 @@ module ActionDispatch
 
       RESERVED_OPTIONS = [:host, :protocol, :port, :subdomain, :domain, :tld_length,
                           :trailing_slash, :anchor, :params, :only_path, :script_name,
-                          :original_script_name]
+                          :original_script_name, :relative_url_root]
 
       def optimize_routes_generation?
         default_url_options.empty?
       end
 
       def find_script_name(options)
-        options.delete(:script_name) || relative_url_root || ''
+        options.delete(:script_name) || find_relative_url_root(options) || ''
+      end
+
+      def find_relative_url_root(options)
+        options.delete(:relative_url_root) || relative_url_root
       end
 
       def path_for(options, route_name = nil)

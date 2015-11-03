@@ -466,7 +466,7 @@ class TestController < ApplicationController
   end
 
   def render_content_type_from_body
-    response.content_type = Mime::RSS
+    response.content_type = Mime[:rss]
     render body: "hello world!"
   end
 
@@ -728,7 +728,7 @@ class RenderTest < ActionController::TestCase
 
   def test_render_process
     get :render_action_hello_world_as_string
-    assert_equal ["Hello world!"], @controller.process(:render_action_hello_world_as_string)
+    assert_equal "Hello world!", @controller.process(:render_action_hello_world_as_string)
   end
 
   # :ported:

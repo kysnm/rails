@@ -9,6 +9,7 @@ require "active_record/connection_adapters/postgresql/oid"
 require "active_record/connection_adapters/postgresql/quoting"
 require "active_record/connection_adapters/postgresql/referential_integrity"
 require "active_record/connection_adapters/postgresql/schema_definitions"
+require "active_record/connection_adapters/postgresql/schema_dumper"
 require "active_record/connection_adapters/postgresql/schema_statements"
 require "active_record/connection_adapters/postgresql/type_metadata"
 require "active_record/connection_adapters/postgresql/utils"
@@ -18,12 +19,6 @@ require 'ipaddr'
 
 module ActiveRecord
   module ConnectionHandling # :nodoc:
-    VALID_CONN_PARAMS = [:host, :hostaddr, :port, :dbname, :user, :password, :connect_timeout,
-                         :client_encoding, :options, :application_name, :fallback_application_name,
-                         :keepalives, :keepalives_idle, :keepalives_interval, :keepalives_count,
-                         :tty, :sslmode, :requiressl, :sslcompression, :sslcert, :sslkey,
-                         :sslrootcert, :sslcrl, :requirepeer, :krbsrvname, :gsslib, :service]
-
     # Establishes a connection to the database that's used by all Active Record objects
     def postgresql_connection(config)
       conn_params = config.symbolize_keys
@@ -35,7 +30,8 @@ module ActiveRecord
       conn_params[:dbname] = conn_params.delete(:database) if conn_params[:database]
 
       # Forward only valid config params to PGconn.connect.
-      conn_params.keep_if { |k, _| VALID_CONN_PARAMS.include?(k) }
+      valid_conn_param_keys = PGconn.conndefaults_hash.keys + [:requiressl]
+      conn_params.slice!(*valid_conn_param_keys)
 
       # The postgres drivers don't allow the creation of an unconnected PGconn object,
       # so just pass a nil connection object for the time being.
@@ -117,61 +113,14 @@ module ActiveRecord
       include PostgreSQL::ReferentialIntegrity
       include PostgreSQL::SchemaStatements
       include PostgreSQL::DatabaseStatements
+      include PostgreSQL::ColumnDumper
       include Savepoints
 
       def schema_creation # :nodoc:
         PostgreSQL::SchemaCreation.new self
       end
 
-      def column_spec_for_primary_key(column)
-        spec = {}
-        if column.serial?
-          return unless column.bigint?
-          spec[:id] = ':bigserial'
-        elsif column.type == :uuid
-          spec[:id] = ':uuid'
-          spec[:default] = column.default_function.inspect
-        else
-          spec[:id] = column.type.inspect
-          spec.merge!(prepare_column_options(column).delete_if { |key, _| [:name, :type, :null].include?(key) })
-        end
-        spec
-      end
-
-      # Adds +:array+ option to the default set provided by the
-      # AbstractAdapter
-      def prepare_column_options(column) # :nodoc:
-        spec = super
-        spec[:array] = 'true' if column.array?
-        spec
-      end
-
-      # Adds +:array+ as a valid migration key
-      def migration_keys
-        super + [:array]
-      end
-
-      def schema_type(column)
-        return super unless column.serial?
-
-        if column.bigint?
-          'bigserial'
-        else
-          'serial'
-        end
-      end
-      private :schema_type
-
-      def schema_default(column)
-        if column.default_function
-          column.default_function.inspect unless column.serial?
-        else
-          super
-        end
-      end
-      private :schema_default
-
-      # Returns +true+, since this connection adapter supports prepared statement
+      # Returns true, since this connection adapter supports prepared statement
       # caching.
       def supports_statement_cache?
         true
@@ -244,6 +193,7 @@ module ActiveRecord
         @visitor = Arel::Visitors::PostgreSQL.new self
         if self.class.type_cast_config_to_boolean(config.fetch(:prepared_statements) { true })
           @prepared_statements = true
+          @visitor.extend(DetermineIfPreparableVisitor)
         else
           @prepared_statements = false
         end
@@ -326,15 +276,15 @@ module ActiveRecord
         true
       end
 
-      # Enable standard-conforming strings if available.
       def set_standard_conforming_strings
-        old, self.client_min_messages = client_min_messages, 'panic'
-        execute('SET standard_conforming_strings = on', 'SCHEMA') rescue nil
-      ensure
-        self.client_min_messages = old
+        execute('SET standard_conforming_strings = on', 'SCHEMA')
       end
 
       def supports_ddl_transactions?
+        true
+      end
+
+      def supports_advisory_locks?
         true
       end
 
@@ -354,6 +304,20 @@ module ActiveRecord
 
       def supports_materialized_views?
         postgresql_version >= 90300
+      end
+
+      def get_advisory_lock(key) # :nodoc:
+        unless key.is_a?(Integer) && key.bit_length <= 63
+          raise(ArgumentError, "Postgres requires advisory lock keys to be a signed 64 bit integer")
+        end
+        select_value("SELECT pg_try_advisory_lock(#{key});")
+      end
+
+      def release_advisory_lock(key) # :nodoc:
+        unless key.is_a?(Integer) && key.bit_length <= 63
+          raise(ArgumentError, "Postgres requires advisory lock keys to be a signed 64 bit integer")
+        end
+        select_value("SELECT pg_advisory_unlock(#{key})")
       end
 
       def enable_extension(name)
@@ -599,16 +563,22 @@ module ActiveRecord
 
         FEATURE_NOT_SUPPORTED = "0A000" #:nodoc:
 
-        def execute_and_clear(sql, name, binds)
-          result = without_prepared_statement?(binds) ? exec_no_cache(sql, name, binds) :
-                                                        exec_cache(sql, name, binds)
+        def execute_and_clear(sql, name, binds, prepare: false)
+          if without_prepared_statement?(binds)
+            result = exec_no_cache(sql, name, [])
+          elsif !prepare
+            result = exec_no_cache(sql, name, binds)
+          else
+            result = exec_cache(sql, name, binds)
+          end
           ret = yield result
           result.clear
           ret
         end
 
         def exec_no_cache(sql, name, binds)
-          log(sql, name, binds) { @connection.async_exec(sql, []) }
+          type_casted_binds = binds.map { |attr| type_cast(attr.value_for_database) }
+          log(sql, name, binds) { @connection.async_exec(sql, type_casted_binds) }
         end
 
         def exec_cache(sql, name, binds)
@@ -690,7 +660,7 @@ module ActiveRecord
           self.client_min_messages = @config[:min_messages] || 'warning'
           self.schema_search_path = @config[:schema_search_path] || @config[:schema_order]
 
-          # Use standard-conforming strings if available so we don't have to do the E'...' dance.
+          # Use standard-conforming strings so we don't have to do the E'...' dance.
           set_standard_conforming_strings
 
           # If using Active Record's time zone support configure the connection to return

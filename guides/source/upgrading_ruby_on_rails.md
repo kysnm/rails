@@ -55,23 +55,26 @@ Upgrading from Rails 4.2 to Rails 5.0
 
 ### Halting callback chains by returning `false`
 
-In Rails 4.2, when a 'before' callback returns `false` in ActiveRecord,
-ActiveModel and ActiveModel::Validations, then the entire callback chain
-is halted. In other words, successive 'before' callbacks are not executed,
-and neither is the action wrapped in callbacks.
+In Rails 4.2, when a 'before' callback returns `false` in Active Record
+and Active Model, then the entire callback chain is halted. In other words,
+successive 'before' callbacks are not executed, and neither is the action wrapped
+in callbacks.
 
-In Rails 5.0, returning `false` in a callback will not have this side effect
-of halting the callback chain. Instead, callback chains must be explicitly
-halted by calling `throw(:abort)`.
+In Rails 5.0, returning `false` in an Active Record or Active Model callback
+will not have this side effect of halting the callback chain. Instead, callback
+chains must be explicitly halted by calling `throw(:abort)`.
 
-When you upgrade from Rails 4.2 to Rails 5.0, returning `false` in a callback
-will still halt the callback chain, but you will receive a deprecation warning
-about this upcoming change.
+When you upgrade from Rails 4.2 to Rails 5.0, returning `false` in those kind of
+callbacks will still halt the callback chain, but you will receive a deprecation
+warning about this upcoming change.
 
 When you are ready, you can opt into the new behavior and remove the deprecation
 warning by adding the following configuration to your `config/application.rb`:
 
-    config.active_support.halt_callback_chains_on_return_false = false
+    ActiveSupport.halt_callback_chains_on_return_false = false
+
+Note that this option will not affect Active Support callbacks since they never
+halted the chain when any value was returned.
 
 See [#17227](https://github.com/rails/rails/pull/17227) for more details.
 
@@ -1087,7 +1090,7 @@ config.active_record.auto_explain_threshold_in_seconds = 0.5
 
 ### config/environments/test.rb
 
-The `mass_assignment_sanitizer` configuration setting should also be be added to `config/environments/test.rb`:
+The `mass_assignment_sanitizer` configuration setting should also be added to `config/environments/test.rb`:
 
 ```ruby
 # Raise exception on mass assignment protection for Active Record models

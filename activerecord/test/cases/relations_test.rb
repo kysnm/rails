@@ -297,6 +297,11 @@ class RelationTest < ActiveRecord::TestCase
     assert_equal 3, tags.length
   end
 
+  def test_finding_with_sanitized_order
+    query = Tag.order(["field(id, ?)", [1,3,2]]).to_sql
+    assert_match(/field\(id, 1,3,2\)/, query)
+  end
+
   def test_finding_with_order_limit_and_offset
     entrants = Entrant.order("id ASC").limit(2).offset(1)
 
@@ -1539,6 +1544,13 @@ class RelationTest < ActiveRecord::TestCase
     # Testing that the before_update callbacks have run
     assert_equal 'David', topic1.reload.author_name
     assert_equal 'David', topic2.reload.author_name
+  end
+
+  def test_update_on_relation_passing_active_record_object_is_deprecated
+    topic = Topic.create!(title: 'Foo', author_name: nil)
+    assert_deprecated(/update/) do
+      Topic.where(id: topic.id).update(topic, title: 'Bar')
+    end
   end
 
   def test_distinct

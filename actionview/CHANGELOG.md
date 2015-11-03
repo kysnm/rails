@@ -1,3 +1,12 @@
+*   Allow `date_select` helper selected option to accept hash like the default options.
+
+    *Lecky Lao*
+
+*   Collection input propagates input's `id` to the label's `for` attribute when
+    using html options as the last element of collection.
+
+    *Vasiliy Ermolovich*
+
 *   Add a `hidden_field` on the `collection_radio_buttons` to avoid raising a error
     when the only input on the form is the `collection_radio_buttons`.
 
@@ -189,7 +198,7 @@
 
     *Nikolay Shebanov*
 
-*   Add a `hidden_field` on the `file_field` to avoid raise a error when the only
+*   Add a `hidden_field` on the `file_field` to avoid raising an error when the only
     input on the form is the `file_field`.
 
     *Mauro George*

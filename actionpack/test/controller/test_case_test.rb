@@ -75,7 +75,7 @@ class TestCaseTest < ActionController::TestCase
     end
 
     def test_headers
-      render plain: request.headers.env.to_json
+      render plain: ::JSON.dump(request.headers.env)
     end
 
     def test_html_output
@@ -139,7 +139,7 @@ XML
 
     def delete_cookie
       cookies.delete("foo")
-      head :ok
+      render plain: 'ok'
     end
 
     def test_without_body

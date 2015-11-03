@@ -339,6 +339,16 @@ module ApplicationTests
       end
     end
 
+    test "config.static_cache_control is deprecated" do
+      make_basic_app do |application|
+        assert_deprecated do
+          application.config.static_cache_control = "public, max-age=60"
+        end
+
+        assert_equal application.config.static_cache_control, "public, max-age=60"
+      end
+    end
+
     test "Use key_generator when secret_key_base is set" do
       make_basic_app do |application|
         application.secrets.secret_key_base = 'b3c631c314c0bbca50c1b2843150fe33'
@@ -404,6 +414,19 @@ module ApplicationTests
 
       assert_deprecated(/You didn't set `secret_key_base`./) do
         app.env_config
+      end
+    end
+
+    test "raise when secrets.secret_key_base is not a type of string" do
+      app_file 'config/secrets.yml', <<-YAML
+        development:
+          secret_key_base: 123
+      YAML
+
+      app 'development'
+
+      assert_raise(ArgumentError) do
+        app.key_generator
       end
     end
 
@@ -1343,6 +1366,22 @@ module ApplicationTests
       end
 
       assert_match 'YAML syntax error occurred while parsing', exception.message
+    end
+
+    test "config_for allows overriding the environment" do
+      app_file 'config/custom.yml', <<-RUBY
+        test:
+          key: 'walrus'
+        production:
+            key: 'unicorn'
+      RUBY
+
+      add_to_config <<-RUBY
+          config.my_custom_config = config_for('custom', env: 'production')
+      RUBY
+      require "#{app_path}/config/environment"
+
+      assert_equal 'unicorn', Rails.application.config.my_custom_config['key']
     end
   end
 end

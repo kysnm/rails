@@ -22,7 +22,7 @@ class SendFileController < ActionController::Base
 
   def test_send_file_headers_bang
     options = {
-      :type => Mime::Type[:PNG],
+      :type => Mime[:png],
       :disposition => 'disposition',
       :filename => 'filename'
     }
@@ -32,7 +32,7 @@ class SendFileController < ActionController::Base
 
   def test_send_file_headers_with_disposition_as_a_symbol
     options = {
-      :type => Mime::Type[:PNG],
+      :type => Mime[:png],
       :disposition => :disposition,
       :filename => 'filename'
     }
@@ -195,7 +195,7 @@ class SendFileTest < ActionController::TestCase
   %w(file data).each do |method|
     define_method "test_send_#{method}_status" do
       @controller.options = { :stream => false, :status => 500 }
-      assert_nothing_raised { assert_not_nil process(method) }
+      assert_not_nil process(method)
       assert_equal 500, @response.status
     end
 

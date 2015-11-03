@@ -177,7 +177,7 @@ class AttributeMethodsTest < ActiveRecord::TestCase
 
   if current_adapter?(:MysqlAdapter, :Mysql2Adapter)
     def test_read_attributes_before_type_cast_on_boolean
-      bool = Boolean.create({ "value" => false })
+      bool = Boolean.create!({ "value" => false })
       if RUBY_PLATFORM =~ /java/
         # JRuby will return the value before typecast as string
         assert_equal "0", bool.reload.attributes_before_type_cast["value"]
@@ -541,9 +541,6 @@ class AttributeMethodsTest < ActiveRecord::TestCase
     assert_equal "1337", developer.name
 
     developer.save!
-
-    assert_equal "50000", developer.salary_before_type_cast
-    assert_equal 1337, developer.name_before_type_cast
 
     assert_equal 50000, developer.salary
     assert_equal "1337", developer.name

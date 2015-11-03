@@ -35,23 +35,22 @@ module ActiveRecord
       # <tt>reload</tt> the record and clears changed attributes.
       def reload(*)
         super.tap do
-          clear_changes_information
+          @mutation_tracker = nil
+          @previous_mutation_tracker = nil
+          @changed_attributes = HashWithIndifferentAccess.new
         end
-      end
-
-      def init_internals
-        super
-        @mutation_tracker = AttributeMutationTracker.new(@attributes, @attributes.dup)
       end
 
       def initialize_dup(other) # :nodoc:
         super
-        @mutation_tracker = AttributeMutationTracker.new(@attributes,
-                                                         self.class._default_attributes.deep_dup)
+        @attributes = self.class._default_attributes.map do |attr|
+          attr.with_value_from_user(@attributes.fetch_value(attr.name))
+        end
+        @mutation_tracker = nil
       end
 
       def changes_applied
-        @previous_mutation_tracker = @mutation_tracker
+        @previous_mutation_tracker = mutation_tracker
         @changed_attributes = HashWithIndifferentAccess.new
         store_original_attributes
       end
@@ -81,7 +80,7 @@ module ActiveRecord
         if defined?(@cached_changed_attributes)
           @cached_changed_attributes
         else
-          super.reverse_merge(@mutation_tracker.changed_values).freeze
+          super.reverse_merge(mutation_tracker.changed_values).freeze
         end
       end
 
@@ -96,17 +95,24 @@ module ActiveRecord
       end
 
       def attribute_changed_in_place?(attr_name)
-        @mutation_tracker.changed_in_place?(attr_name)
+        mutation_tracker.changed_in_place?(attr_name)
       end
 
       private
 
+      def mutation_tracker
+        unless defined?(@mutation_tracker)
+          @mutation_tracker = nil
+        end
+        @mutation_tracker ||= AttributeMutationTracker.new(@attributes)
+      end
+
       def changes_include?(attr_name)
-        super || @mutation_tracker.changed?(attr_name)
+        super || mutation_tracker.changed?(attr_name)
       end
 
       def clear_attribute_change(attr_name)
-        @mutation_tracker.forget_change(attr_name)
+        mutation_tracker.forget_change(attr_name)
       end
 
       def _update_record(*)
@@ -122,11 +128,12 @@ module ActiveRecord
       end
 
       def store_original_attributes
-        @mutation_tracker = @mutation_tracker.now_tracking(@attributes)
+        @attributes = @attributes.map(&:forgetting_assignment)
+        @mutation_tracker = nil
       end
 
       def previous_mutation_tracker
-        @previous_mutation_tracker ||= NullMutationTracker.new
+        @previous_mutation_tracker ||= NullMutationTracker.instance
       end
 
       def cache_changed_attributes

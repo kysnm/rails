@@ -126,7 +126,9 @@ module ActiveRecord
       # Returns an array of arrays containing the field values.
       # Order is the same as that returned by +columns+.
       def select_rows(sql, name = nil, binds = [])
-        execute(sql, name).to_a
+        result = execute(sql, name)
+        @connection.next_result while @connection.more_results?
+        result.to_a
       end
 
       # Executes the SQL statement in the context of this connection.
@@ -140,8 +142,9 @@ module ActiveRecord
         super
       end
 
-      def exec_query(sql, name = 'SQL', binds = [])
+      def exec_query(sql, name = 'SQL', binds = [], prepare: false)
         result = execute(sql, name)
+        @connection.next_result while @connection.more_results?
         ActiveRecord::Result.new(result.fields, result.to_a)
       end
 

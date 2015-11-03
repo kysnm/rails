@@ -112,7 +112,7 @@ module ActiveRecord
       end
 
       # Finds an object in the collection responding to the +id+. Uses the same
-      # rules as <tt>ActiveRecord::Base.find</tt>. Returns <tt>ActiveRecord::RecordNotFound</tt>
+      # rules as ActiveRecord::Base.find. Returns ActiveRecord::RecordNotFound
       # error if the object cannot be found.
       #
       #   class Person < ActiveRecord::Base
@@ -171,27 +171,27 @@ module ActiveRecord
         @association.first(*args)
       end
 
-      # Same as +first+ except returns only the second record.
+      # Same as #first except returns only the second record.
       def second(*args)
         @association.second(*args)
       end
 
-      # Same as +first+ except returns only the third record.
+      # Same as #first except returns only the third record.
       def third(*args)
         @association.third(*args)
       end
 
-      # Same as +first+ except returns only the fourth record.
+      # Same as #first except returns only the fourth record.
       def fourth(*args)
         @association.fourth(*args)
       end
 
-      # Same as +first+ except returns only the fifth record.
+      # Same as #first except returns only the fifth record.
       def fifth(*args)
         @association.fifth(*args)
       end
 
-      # Same as +first+ except returns only the forty second record.
+      # Same as #first except returns only the forty second record.
       # Also known as accessing "the reddit".
       def forty_two(*args)
         @association.forty_two(*args)
@@ -315,7 +315,7 @@ module ActiveRecord
         @association.create(attributes, &block)
       end
 
-      # Like +create+, except that if the record is invalid, raises an exception.
+      # Like #create, except that if the record is invalid, raises an exception.
       #
       #   class Person
       #     has_many :pets
@@ -332,8 +332,8 @@ module ActiveRecord
       end
 
       # Add one or more records to the collection by setting their foreign keys
-      # to the association's primary key. Since << flattens its argument list and
-      # inserts each record, +push+ and +concat+ behave identically. Returns +self+
+      # to the association's primary key. Since #<< flattens its argument list and
+      # inserts each record, +push+ and #concat behave identically. Returns +self+
       # so method calls may be chained.
       #
       #   class Person < ActiveRecord::Base
@@ -389,7 +389,7 @@ module ActiveRecord
       # specified by the +:dependent+ option. If no +:dependent+ option is given,
       # then it will follow the default strategy.
       #
-      # For +has_many :through+ associations, the default deletion strategy is
+      # For <tt>has_many :through</tt> associations, the default deletion strategy is
       # +:delete_all+.
       #
       # For +has_many+ associations, the default deletion strategy is +:nullify+.
@@ -424,7 +424,7 @@ module ActiveRecord
       #   #       #<Pet id: 3, name: "Choo-Choo", person_id: nil>
       #   #    ]
       #
-      # Both +has_many+ and +has_many :through+ dependencies default to the
+      # Both +has_many+ and <tt>has_many :through</tt> dependencies default to the
       # +:delete_all+ strategy if the +:dependent+ option is set to +:destroy+.
       # Records are not instantiated and callbacks will not be fired.
       #
@@ -500,7 +500,7 @@ module ActiveRecord
       # then it will follow the default strategy. Returns an array with the
       # deleted records.
       #
-      # For +has_many :through+ associations, the default deletion strategy is
+      # For <tt>has_many :through</tt> associations, the default deletion strategy is
       # +:delete_all+.
       #
       # For +has_many+ associations, the default deletion strategy is +:nullify+.

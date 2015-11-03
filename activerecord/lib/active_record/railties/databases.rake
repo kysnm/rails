@@ -34,7 +34,7 @@ db_namespace = namespace :db do
     end
   end
 
-  # desc "Empty the database from DATABASE_URL or config/database.yml for the current RAILS_ENV (use db:drop:all to drop all databases in the config). Without RAILS_ENV it defaults to purging the development and test databases."
+  # desc "Empty the database from DATABASE_URL or config/database.yml for the current RAILS_ENV (use db:purge:all to purge all databases in the config). Without RAILS_ENV it defaults to purging the development and test databases."
   task :purge => [:load_config] do
     ActiveRecord::Tasks::DatabaseTasks.purge_current
   end
@@ -100,12 +100,14 @@ db_namespace = namespace :db do
 
       file_list =
           ActiveRecord::Tasks::DatabaseTasks.migrations_paths.flat_map do |path|
-            # match "20091231235959_some_name.rb" and "001_some_name.rb" pattern
-            Dir.foreach(path).grep(/^(\d{3,})_(.+)\.rb$/) do
-              version = ActiveRecord::SchemaMigration.normalize_migration_number($1)
+            Dir.foreach(path).map do |file|
+              next unless ActiveRecord::Migrator.match_to_migration_filename?(file)
+
+              version, name, scope = ActiveRecord::Migrator.parse_migration_filename(file)
+              version = ActiveRecord::SchemaMigration.normalize_migration_number(version)
               status = db_list.delete(version) ? 'up' : 'down'
-              [status, version, $2.humanize]
-            end
+              [status, version, (name + scope).humanize]
+            end.compact
           end
 
       db_list.map! do |version|

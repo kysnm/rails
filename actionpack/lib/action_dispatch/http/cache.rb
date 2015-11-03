@@ -59,7 +59,7 @@ module ActionDispatch
         end
 
         def last_modified?
-          have_header? LAST_MODIFIED
+          has_header? LAST_MODIFIED
         end
 
         def last_modified=(utc_time)
@@ -73,7 +73,7 @@ module ActionDispatch
         end
 
         def date?
-          have_header? DATE
+          has_header? DATE
         end
 
         def date=(utc_time)
@@ -82,24 +82,19 @@ module ActionDispatch
 
         def etag=(etag)
           key = ActiveSupport::Cache.expand_cache_key(etag)
-          set_header ETAG, %("#{Digest::MD5.hexdigest(key)}")
+          super %("#{Digest::MD5.hexdigest(key)}")
         end
 
-        def etag
-          get_header ETAG
-        end
-        alias :etag? :etag
+        def etag?; etag; end
 
       private
 
         DATE          = 'Date'.freeze
         LAST_MODIFIED = "Last-Modified".freeze
-        ETAG          = "ETag".freeze
-        CACHE_CONTROL = "Cache-Control".freeze
         SPECIAL_KEYS  = Set.new(%w[extras no-cache max-age public must-revalidate])
 
         def cache_control_segments
-          if cache_control = get_header(CACHE_CONTROL)
+          if cache_control = _cache_control
             cache_control.delete(' ').split(',')
           else
             []
@@ -153,11 +148,11 @@ module ActionDispatch
           control.merge! cache_control
 
           if control.empty?
-            set_header CACHE_CONTROL, DEFAULT_CACHE_CONTROL
+            self._cache_control = DEFAULT_CACHE_CONTROL
           elsif control[:no_cache]
-            set_header CACHE_CONTROL, NO_CACHE
+            self._cache_control = NO_CACHE
             if control[:extras]
-              set_header(CACHE_CONTROL, get_header(CACHE_CONTROL) + ", #{control[:extras].join(', ')}")
+              self._cache_control = _cache_control + ", #{control[:extras].join(', ')}"
             end
           else
             extras  = control[:extras]
@@ -169,7 +164,7 @@ module ActionDispatch
             options << MUST_REVALIDATE if control[:must_revalidate]
             options.concat(extras) if extras
 
-            set_header CACHE_CONTROL, options.join(", ")
+            self._cache_control = options.join(", ")
           end
         end
       end
