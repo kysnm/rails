@@ -26,7 +26,7 @@ require 'models/bird'
 require 'models/car'
 require 'models/bulb'
 require 'rexml/document'
-require 'concurrent/atomics'
+require 'concurrent/atomic/count_down_latch'
 
 class FirstAbstractClass < ActiveRecord::Base
   self.abstract_class = true
@@ -112,7 +112,9 @@ class BasicsTest < ActiveRecord::TestCase
 
   unless current_adapter?(:PostgreSQLAdapter, :OracleAdapter, :SQLServerAdapter, :FbAdapter)
     def test_limit_with_comma
-      assert Topic.limit("1,2").to_a
+      assert_deprecated do
+        assert Topic.limit("1,2").to_a
+      end
     end
   end
 
@@ -138,14 +140,10 @@ class BasicsTest < ActiveRecord::TestCase
   end
 
   def test_limit_should_sanitize_sql_injection_for_limit_with_commas
-    assert_raises(ArgumentError) do
-      Topic.limit("1, 7 procedure help()").to_a
-    end
-  end
-
-  unless current_adapter?(:MysqlAdapter, :Mysql2Adapter)
-    def test_limit_should_allow_sql_literal
-      assert_equal 1, Topic.limit(Arel.sql('2-1')).to_a.length
+    assert_deprecated do
+      assert_raises(ArgumentError) do
+        Topic.limit("1, 7 procedure help()").to_a
+      end
     end
   end
 
@@ -1343,6 +1341,19 @@ class BasicsTest < ActiveRecord::TestCase
   def test_attribute_names
     assert_equal ["id", "type", "firm_id", "firm_name", "name", "client_of", "rating", "account_id", "description"],
                  Company.attribute_names
+  end
+
+  def test_has_attribute
+    assert Company.has_attribute?('id')
+    assert Company.has_attribute?('type')
+    assert Company.has_attribute?('name')
+    assert_not Company.has_attribute?('lastname')
+    assert_not Company.has_attribute?('age')
+  end
+
+  def test_has_attribute_with_symbol
+    assert Company.has_attribute?(:id)
+    assert_not Company.has_attribute?(:age)
   end
 
   def test_attribute_names_on_table_not_exists

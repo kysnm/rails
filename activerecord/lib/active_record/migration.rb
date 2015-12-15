@@ -967,10 +967,12 @@ module ActiveRecord
       end
 
       def get_all_versions(connection = Base.connection)
-        if connection.table_exists?(schema_migrations_table_name)
-          SchemaMigration.all.map { |x| x.version.to_i }.sort
-        else
-          []
+        ActiveSupport::Deprecation.silence do
+          if connection.table_exists?(schema_migrations_table_name)
+            SchemaMigration.all.map { |x| x.version.to_i }.sort
+          else
+            []
+          end
         end
       end
 
@@ -1200,17 +1202,17 @@ module ActiveRecord
     end
 
     def with_advisory_lock
-      key = generate_migrator_advisory_lock_key
-      got_lock = Base.connection.get_advisory_lock(key)
+      lock_id = generate_migrator_advisory_lock_id
+      got_lock = Base.connection.get_advisory_lock(lock_id)
       raise ConcurrentMigrationError unless got_lock
       load_migrated # reload schema_migrations to be sure it wasn't changed by another process before we got the lock
       yield
     ensure
-      Base.connection.release_advisory_lock(key) if got_lock
+      Base.connection.release_advisory_lock(lock_id) if got_lock
     end
 
     MIGRATOR_SALT = 2053462845
-    def generate_migrator_advisory_lock_key
+    def generate_migrator_advisory_lock_id
       db_name_hash = Zlib.crc32(Base.connection.current_database)
       MIGRATOR_SALT * db_name_hash
     end

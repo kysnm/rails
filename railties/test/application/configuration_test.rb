@@ -308,34 +308,44 @@ module ApplicationTests
       assert_equal Pathname.new(app_path).join("somewhere"), Rails.public_path
     end
 
-    test "In production mode, config.serve_static_files is off by default" do
+    test "In production mode, config.public_file_server.enabled is off by default" do
       restore_default_config
 
       with_rails_env "production" do
         app 'production'
-        assert_not app.config.serve_static_files
+        assert_not app.config.public_file_server.enabled
       end
     end
 
-    test "In production mode, config.serve_static_files is enabled when RAILS_SERVE_STATIC_FILES is set" do
+    test "In production mode, config.public_file_server.enabled is enabled when RAILS_SERVE_STATIC_FILES is set" do
       restore_default_config
 
       with_rails_env "production" do
         switch_env "RAILS_SERVE_STATIC_FILES", "1" do
           app 'production'
-          assert app.config.serve_static_files
+          assert app.config.public_file_server.enabled
         end
       end
     end
 
-    test "In production mode, config.serve_static_files is disabled when RAILS_SERVE_STATIC_FILES is blank" do
+    test "In production mode, config.public_file_server.enabled is disabled when RAILS_SERVE_STATIC_FILES is blank" do
       restore_default_config
 
       with_rails_env "production" do
         switch_env "RAILS_SERVE_STATIC_FILES", " " do
           app 'production'
-          assert_not app.config.serve_static_files
+          assert_not app.config.public_file_server.enabled
         end
+      end
+    end
+
+    test "config.serve_static_files is deprecated" do
+      make_basic_app do |application|
+        assert_deprecated do
+          application.config.serve_static_files = true
+        end
+
+        assert application.config.public_file_server.enabled
       end
     end
 
@@ -1382,6 +1392,46 @@ module ApplicationTests
       require "#{app_path}/config/environment"
 
       assert_equal 'unicorn', Rails.application.config.my_custom_config['key']
+    end
+
+    test "api_only is false by default" do
+      app 'development'
+      refute Rails.application.config.api_only
+    end
+
+    test "api_only generator config is set when api_only is set" do
+      add_to_config <<-RUBY
+        config.api_only = true
+      RUBY
+      app 'development'
+
+      Rails.application.load_generators
+      assert Rails.configuration.api_only
+    end
+
+    test "debug_exception_response_format is :api by default if only_api is enabled" do
+      add_to_config <<-RUBY
+        config.api_only = true
+      RUBY
+      app 'development'
+
+      assert_equal :api, Rails.configuration.debug_exception_response_format
+    end
+
+    test "debug_exception_response_format can be override" do
+      add_to_config <<-RUBY
+        config.api_only = true
+      RUBY
+
+      app_file 'config/environments/development.rb', <<-RUBY
+      Rails.application.configure do
+        config.debug_exception_response_format = :default
+      end
+      RUBY
+
+      app 'development'
+
+      assert_equal :default, Rails.configuration.debug_exception_response_format
     end
   end
 end

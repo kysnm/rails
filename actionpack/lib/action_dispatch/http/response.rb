@@ -451,6 +451,8 @@ module ActionDispatch # :nodoc:
     end
 
     def before_sending
+      headers.freeze
+      request.commit_cookie_jar! unless committed?
     end
 
     def merge_default_headers(response, default)

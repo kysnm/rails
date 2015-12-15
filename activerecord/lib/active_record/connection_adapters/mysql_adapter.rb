@@ -38,7 +38,7 @@ module ActiveRecord
       ConnectionAdapters::MysqlAdapter.new(mysql, logger, options, config)
     rescue Mysql::Error => error
       if error.message.include?("Unknown database")
-        raise ActiveRecord::NoDatabaseError.new(error.message, error)
+        raise ActiveRecord::NoDatabaseError
       else
         raise
       end
@@ -82,6 +82,7 @@ module ActiveRecord
         super
         @statements = StatementPool.new(self.class.type_cast_config_to_integer(config.fetch(:statement_limit) { 1000 }))
         @client_encoding = nil
+        @connection_options = connection_options
         connect
       end
 
@@ -102,6 +103,11 @@ module ActiveRecord
         else
           to_enum(:each_hash, result)
         end
+      end
+
+      def new_column(field, default, sql_type_metadata = nil, null = true, default_function = nil, collation = nil) # :nodoc:
+        field = set_field_encoding(field)
+        super
       end
 
       def error_number(exception) # :nodoc:
@@ -463,7 +469,7 @@ module ActiveRecord
         @full_version ||= @connection.server_info
       end
 
-      def set_field_encoding field_name
+      def set_field_encoding(field_name)
         field_name.force_encoding(client_encoding)
         if internal_enc = Encoding.default_internal
           field_name = field_name.encode!(internal_enc)

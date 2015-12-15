@@ -1,3 +1,42 @@
+*   `ActiveSupport::Cache::Store#namespaced_key`, 
+    `ActiveSupport::Cache::MemCachedStore#escape_key`, and 
+    `ActiveSupport::Cache::FileStore#key_file_path` 
+    are deprecated and replaced with `normalize_key` that now calls `super`.
+    
+    `ActiveSupport::Cache::LocaleCache#set_cache_value` is deprecated and replaced with `write_cache_value`.
+    
+    *Michael Grosser*
+
+*   Implements an evented file watcher to asynchronously detect changes in the
+    application source code, routes, locales, etc.
+
+    This watcher is disabled by default, applications my enable it in the configuration:
+
+        # config/environments/development.rb
+        config.file_watcher = ActiveSupport::EventedFileUpdateChecker
+
+    This feature depends on the [listen](https://github.com/guard/listen) gem:
+
+        group :development do
+          gem 'listen', '~> 3.0.5'
+        end
+
+    *Puneet Agarwal* and *Xavier Noria*
+
+*   Added `Time.days_in_year` to return the number of days in the given year, or the
+    current year if no argument is provided.
+
+    *Jon Pascoe*
+
+*   Updated `parameterize` to preserve the case of a string, optionally.
+
+    Example:
+
+        parameterize("Donald E. Knuth", separator: '_') # => "donald_e_knuth"
+        parameterize("Donald E. Knuth", preserve_case: true) # => "Donald-E-Knuth"
+
+    *Swaathi Kakarla*
+
 *   `HashWithIndifferentAccess.new` respects the default value or proc on objects
     that respond to `#to_hash`. `.new_from_hash_copying_default` simply invokes `.new`.
     All calls to `.new_from_hash_copying_default` are replaced with `.new`.

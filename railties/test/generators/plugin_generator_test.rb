@@ -65,8 +65,11 @@ class PluginGeneratorTest < Rails::Generators::TestCase
       assert_match(/require.+test\/dummy\/config\/environment/, content)
       assert_match(/ActiveRecord::Migrator\.migrations_paths.+test\/dummy\/db\/migrate/, content)
       assert_match(/Minitest\.backtrace_filter = Minitest::BacktraceFilter\.new/, content)
+      assert_match(/Rails::TestUnitReporter\.executable = 'bin\/test'/, content)
     end
     assert_file "test/bukkits_test.rb", /assert_kind_of Module, Bukkits/
+    assert_file 'bin/test'
+    assert_no_file 'bin/rails'
   end
 
   def test_generating_test_files_in_full_mode
@@ -223,7 +226,7 @@ class PluginGeneratorTest < Rails::Generators::TestCase
     run_generator
     FileUtils.cd destination_root
     quietly { system 'bundle install' }
-    assert_match(/1 runs, 1 assertions, 0 failures, 0 errors/, `bundle exec rake test 2>&1`)
+    assert_match(/1 runs, 1 assertions, 0 failures, 0 errors/, `bin/test 2>&1`)
   end
 
   def test_ensure_that_tests_works_in_full_mode
@@ -315,7 +318,9 @@ class PluginGeneratorTest < Rails::Generators::TestCase
       assert_match(/ActiveRecord::Migrator\.migrations_paths.+\.\.\/test\/dummy\/db\/migrate/, content)
       assert_match(/ActiveRecord::Migrator\.migrations_paths.+<<.+\.\.\/db\/migrate/, content)
       assert_match(/ActionDispatch::IntegrationTest\.fixture_path = ActiveSupport::TestCase\.fixture_pat/, content)
+      assert_no_match(/Rails::TestUnitReporter\.executable = 'bin\/test'/, content)
     end
+    assert_no_file 'bin/test'
   end
 
   def test_create_mountable_application_with_mountable_option_and_hypenated_name
@@ -382,7 +387,6 @@ class PluginGeneratorTest < Rails::Generators::TestCase
     run_generator
     assert_file "bukkits.gemspec", /s.name\s+= "bukkits"/
     assert_file "bukkits.gemspec", /s.files = Dir\["\{app,config,db,lib\}\/\*\*\/\*", "MIT-LICENSE", "Rakefile", "README\.rdoc"\]/
-    assert_file "bukkits.gemspec", /s.test_files = Dir\["test\/\*\*\/\*"\]/
     assert_file "bukkits.gemspec", /s.version\s+ = Bukkits::VERSION/
   end
 
@@ -456,9 +460,6 @@ class PluginGeneratorTest < Rails::Generators::TestCase
   def test_skipping_test_files
     run_generator [destination_root, "--skip-test"]
     assert_no_file "test"
-    assert_file "bukkits.gemspec" do |contents|
-      assert_no_match(/s.test_files = Dir\["test\/\*\*\/\*"\]/, contents)
-    end
     assert_file '.gitignore' do |contents|
       assert_no_match(/test\dummy/, contents)
     end

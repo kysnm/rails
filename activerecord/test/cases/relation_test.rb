@@ -235,6 +235,13 @@ module ActiveRecord
       assert_equal 3, relation.where(id: post.id).pluck(:id).size
     end
 
+    def test_merge_raises_with_invalid_argument
+      assert_raises ArgumentError do
+        relation = Relation.new(FakeKlass, :b, nil)
+        relation.merge(true)
+      end
+    end
+
     def test_respond_to_for_non_selected_element
       post = Post.select(:title).first
       assert_equal false, post.respond_to?(:body), "post should not respond_to?(:body) since invoking it raises exception"

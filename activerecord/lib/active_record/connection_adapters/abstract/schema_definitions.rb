@@ -202,22 +202,17 @@ module ActiveRecord
     #     end
     #   end
     #
-    # The table definitions
-    # The Columns are stored as a ColumnDefinition in the #columns attribute.
     class TableDefinition
       include ColumnMethods
 
-      # An array of ColumnDefinition objects, representing the column changes
-      # that have been defined.
       attr_accessor :indexes
-      attr_reader :name, :temporary, :options, :as, :foreign_keys, :native
+      attr_reader :name, :temporary, :options, :as, :foreign_keys
 
-      def initialize(types, name, temporary, options, as = nil)
+      def initialize(name, temporary, options, as = nil)
         @columns_hash = {}
         @indexes = {}
         @foreign_keys = {}
         @primary_keys = nil
-        @native = types
         @temporary = temporary
         @options = options
         @as = as
@@ -366,11 +361,8 @@ module ActiveRecord
       def new_column_definition(name, type, options) # :nodoc:
         type = aliased_types(type.to_s, type)
         column = create_column_definition name, type
-        limit = options.fetch(:limit) do
-          native[type][:limit] if native[type].is_a?(Hash)
-        end
 
-        column.limit       = limit
+        column.limit       = options[:limit]
         column.precision   = options[:precision]
         column.scale       = options[:scale]
         column.default     = options[:default]
@@ -631,11 +623,6 @@ module ActiveRecord
       def foreign_key_exists?(*args) # :nodoc:
         @base.foreign_key_exists?(name, *args)
       end
-
-      private
-        def native
-          @base.native_database_types
-        end
     end
   end
 end

@@ -1,3 +1,22 @@
+*   Respect value of `:object` if `:object` is false when rendering.
+
+    Fixes #22260.
+
+    *Yuichiro Kaneko*
+
+*   Generate `week_field` input values using a 1-based index and not a 0-based index
+    as per the W3 spec: http://www.w3.org/TR/html-markup/datatypes.html#form.data.week
+
+    *Christoph Geschwind*
+
+*   Allow `host` option in `javascript_include_tag` and `stylesheet_link_tag` helpers
+
+    *Grzegorz Witek*
+
+*   Restrict `url_for :back` to valid, non-JavaScript URLs. GH#14444
+
+    *Damien Burke*
+
 *   Allow `date_select` helper selected option to accept hash like the default options.
 
     *Lecky Lao*
@@ -33,7 +52,7 @@
 
 *   Add a break_sequence option to word_wrap so you can specify a custom break.
 
-    * Mauricio Gomez *
+    *Mauricio Gomez*
 
 *   Add wildcard matching to explicit dependencies.
 

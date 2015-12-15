@@ -38,6 +38,10 @@ class UrlHelperTest < ActiveSupport::TestCase
     assert_equal "/?a=b&c=d", url_for(hash_for(a: :b, c: :d))
   end
 
+  def test_url_for_does_not_include_empty_hashes
+    assert_equal "/", url_for(hash_for(a: {}))
+  end
+
   def test_url_for_with_back
     referer = 'http://www.example.com/referer'
     @controller = Struct.new(:request).new(Struct.new(:env).new("HTTP_REFERER" => referer))
@@ -47,6 +51,23 @@ class UrlHelperTest < ActiveSupport::TestCase
 
   def test_url_for_with_back_and_no_referer
     @controller = Struct.new(:request).new(Struct.new(:env).new({}))
+    assert_equal 'javascript:history.back()', url_for(:back)
+  end
+
+  def test_url_for_with_back_and_no_controller
+    @controller = nil
+    assert_equal 'javascript:history.back()', url_for(:back)
+  end
+
+  def test_url_for_with_back_and_javascript_referer
+    referer = 'javascript:alert(document.cookie)'
+    @controller = Struct.new(:request).new(Struct.new(:env).new("HTTP_REFERER" => referer))
+    assert_equal 'javascript:history.back()', url_for(:back)
+  end
+
+  def test_url_for_with_invalid_referer
+    referer = 'THIS IS NOT A URL'
+    @controller = Struct.new(:request).new(Struct.new(:env).new("HTTP_REFERER" => referer))
     assert_equal 'javascript:history.back()', url_for(:back)
   end
 
@@ -521,6 +542,20 @@ class UrlHelperTest < ActiveSupport::TestCase
   def test_mail_to_with_img
     assert_dom_equal %{<a href="mailto:feedback@example.com"><img src="/feedback.png" /></a>},
       mail_to('feedback@example.com', '<img src="/feedback.png" />'.html_safe)
+  end
+
+  def test_mail_to_with_html_safe_string
+    assert_dom_equal(
+      %{<a href="mailto:david@loudthinking.com">david@loudthinking.com</a>},
+      mail_to("david@loudthinking.com".html_safe)
+    )
+  end
+
+  def test_mail_to_with_nil
+    assert_dom_equal(
+      %{<a href="mailto:"></a>},
+      mail_to(nil)
+    )
   end
 
   def test_mail_to_returns_html_safe_string

@@ -137,7 +137,7 @@ PATH
       activesupport (= 5.0.0.alpha)
       arel (= 7.0.0.alpha)
     activesupport (5.0.0.alpha)
-      concurrent-ruby (~> 1.0.0.pre3, < 2.0.0)
+      concurrent-ruby (~> 1.0)
       i18n (~> 0.7)
       json (~> 1.7, >= 1.7.7)
       method_source
@@ -176,7 +176,7 @@ GEM
     builder (3.2.2)
     bunny (2.2.0)
       amq-protocol (>= 2.0.0)
-    byebug (6.0.2)
+    byebug (8.2.0)
     celluloid (0.17.2)
       celluloid-essentials
       celluloid-extras
@@ -201,7 +201,7 @@ GEM
       coffee-script-source
       execjs
     coffee-script-source (1.9.1.1)
-    concurrent-ruby (1.0.0.pre4)
+    concurrent-ruby (1.0.0)
     connection_pool (2.2.0)
     dalli (2.7.4)
     dante (0.2.0)
@@ -212,6 +212,9 @@ GEM
       delayed_job (>= 3.0, < 5)
     erubis (2.7.0)
     execjs (2.6.0)
+    ffi (1.9.10)
+    ffi (1.9.10-x64-mingw32)
+    ffi (1.9.10-x86-mingw32)
     hitimes (1.2.3)
     hitimes (1.2.3-x86-mingw32)
     i18n (0.7.0)
@@ -219,12 +222,15 @@ GEM
     kindlerb (0.1.1)
       mustache
       nokogiri
+    listen (3.0.5)
+      rb-fsevent (>= 0.9.3)
+      rb-inotify (>= 0.9)
     loofah (2.0.3)
       nokogiri (>= 1.5.9)
     metaclass (0.0.4)
     method_source (0.8.2)
     mime-types (2.6.2)
-    mini_portile (0.7.0.rc4)
+    mini_portile2 (2.0.0)
     minitest (5.3.3)
     mocha (0.14.0)
       metaclass (~> 0.0.1)
@@ -233,8 +239,8 @@ GEM
     mustache (1.0.2)
     mysql (2.9.1)
     mysql2 (0.4.1)
-    nokogiri (1.6.7.rc3)
-      mini_portile (~> 0.7.0.rc4)
+    nokogiri (1.6.7)
+      mini_portile2 (~> 2.0.0.rc2)
     pg (0.18.3)
     psych (2.0.15)
     que (0.11.2)
@@ -252,6 +258,9 @@ GEM
     rails-html-sanitizer (1.0.2)
       loofah (~> 2.0)
     rake (10.4.2)
+    rb-fsevent (0.9.6)
+    rb-inotify (0.9.5)
+      ffi (>= 0.5.0)
     rdoc (4.2.0)
     redcarpet (3.2.3)
     redis (3.2.1)
@@ -333,12 +342,13 @@ DEPENDENCIES
   jquery-rails!
   json
   kindlerb (= 0.1.1)
+  listen (~> 3.0.5)
   mail!
   minitest (< 5.3.4)
   mocha (~> 0.14)
   mysql (>= 2.9.0)
   mysql2 (>= 0.4.0)
-  nokogiri (>= 1.6.7.rc3)
+  nokogiri (>= 1.6.7)
   pg (>= 0.18.0)
   psych (~> 2.0)
   qu-rails!
